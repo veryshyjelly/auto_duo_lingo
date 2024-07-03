@@ -9,18 +9,29 @@
 <body>
 <div class="container">
         <h1>
-            <span onclick=""><img src="mic.svg" class="mic" alt=""></span>
+            <span onclick="play()"><img src="mic.svg" class="mic" alt=""></span>
             <span id="heading">Start Lesson</span>
         </h1>
 
         <div id="prompt"></div>
 
-        <textarea class="" id="inputString" name="inputString" placeholder="Type your text here" autofocus></textarea>
+        <textarea onsubmit="submit()" class="" id="inputString" name="inputString" placeholder="Type your text here" autofocus></textarea>
 
-        <div class="option-pad" id="option-pad"></div>
+
+        <div class="word-bank" id="word-bank"></div>
+        <div class="option-pad" id="option-pad">
+            <div id="option-left"></div>
+            <div id="option-right"></div>
+        </div>
+
+    <div id="error" class="hidden">
+        !! couldn't form the text using available options
+    </div>
+
+    <div id="right-answer"></div>
 
         <div class="button-box">
-            <button type="button" class="btn-numeric" style="font-size: large; margin-right: 140px" onclick="clearAll()">Clear</button>
+            <button type="button" class="btn" style="font-size: large; margin-right: 140px" onclick="clearAll()">Clear</button>
             <button type="button" class="btn-primary"  onclick="submit()">Continue</button>
         </div>
 </div>

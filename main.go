@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	l := launcher.New().Headless(false).UserDataDir("../bd/")
+	l := launcher.New().Bin("C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe").Headless(false).UserDataDir("../bd/")
 	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect().Trace(true)
 	defer browser.Close()
 

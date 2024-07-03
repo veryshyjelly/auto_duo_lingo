@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/input"
 	"log"
 	"strings"
 	"time"
@@ -17,8 +18,10 @@ const (
 	MATCH
 	CHARACTER
 	FillInBlank
+	WhichOne
 	ENGLISH
 	JAPANESE
+	PLAY
 )
 
 type ActionData struct {
@@ -33,64 +36,48 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 	// And pass the english or japanese text respectively for it
 	for {
 		a := <-action
+		pg := <-page
 		switch a.Type {
 		case START:
-			pg := <-page
-			page <- pg.MustNavigate("https://www.duolingo.com/lesson")
+			pg.MustNavigate("https://www.duolingo.com/lesson")
+			AutoContinue(pg)
+			page <- pg
 		case CONTINUE:
-			pg := <-page
-			pg.MustElement("#session\\/PlayerFooter > div > div > button").MustClick()
+			pg.Keyboard.Type(input.Enter)
 			AutoContinue(pg)
 			page <- pg
 		case MATCH:
-			option := a.OptionValue
-			pg := <-page
-			els := pg.MustElements("._231NG")
-			for _, e := range els {
-				if e.MustText() == option {
-					e.MustClick()
-					break
-				}
-			}
+			clickOption(pg, a.OptionValue, "._231NG")
 			AutoContinue(pg)
 			page <- pg
 		case SOUND:
+			clickOption(pg, a.OptionValue, ".lEvgJ")
+			AutoContinue(pg)
+			page <- pg
 		case FillInBlank:
-			option := a.OptionValue
-			pg := <-page
-			els := pg.MustElements(".CwCwj")
-			for _, e := range els {
-				if e.MustText() == option {
-					e.MustClick()
-					break
-				}
-			}
+			clickOption(pg, a.OptionValue, ".lEvgJ")
+			AutoContinue(pg)
+			page <- pg
+		case WhichOne:
+			clickOption(pg, a.OptionValue, "._1NM0v")
 			AutoContinue(pg)
 			page <- pg
 		case CHARACTER:
-			option := a.OptionValue
-			pg := <-page
-			els := pg.MustElements(".APqdQ")
-			for _, e := range els {
-				if e.MustText() == option {
-					e.MustClick()
-					break
-				}
-			}
+			clickOption(pg, a.OptionValue, ".APqdQ")
 			AutoContinue(pg)
 			page <- pg
 		case ENGLISH:
 			text := a.EnglishChips
-			pg := <-page
 			chips := pg.MustElementsByJS(`() => document.querySelector(".eSgkc").children`)
 			for _, t := range text {
 				for _, chip := range chips {
 					btn := chip.MustElement("button")
-					if btn.MustProperty("ariaDisabled").Bool() {
+					if btn.MustProperty("ariaDisabled").Str() == "true" {
 						continue
 					}
 					if strings.ToUpper(btn.MustText()) == strings.ToUpper(t) {
 						btn.MustClick()
+						break
 					}
 				}
 			}
@@ -98,14 +85,20 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 			page <- pg
 		case JAPANESE:
 			text := a.JapaneseTranslate
-			pg := <-page
 			fmt.Printf("Writing: %v", text)
 			inputBox := pg.MustElement("._2OQj6")
 			inputBox.MustFocus()
 			pg.MustInsertText(text)
 			AutoContinue(pg)
 			page <- pg
+		case PLAY:
+			pg.Keyboard.Press(input.ControlLeft)
+			pg.Keyboard.Press(input.Space)
+			pg.Keyboard.Release(input.Space)
+			pg.Keyboard.Release(input.ControlLeft)
+			page <- pg
 		default:
+			page <- pg
 			log.Printf("Invalid Action %v\n", action)
 			continue
 		}
@@ -113,12 +106,22 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 	}
 }
 
+func clickOption(pg *rod.Page, opt string, selector string) {
+	els := pg.MustElements(selector)
+	for _, e := range els {
+		if e.MustText() == opt {
+			e.MustClick()
+			break
+		}
+	}
+}
+
 func AutoContinue(page *rod.Page) {
 	for {
-		ele, err := page.Timeout(time.Millisecond * 1000).Element("._2oGJR")
-		if ele == nil {
-			ele, err = page.Timeout(time.Millisecond * 1000).Element("._1lyVV")
-		}
+		ele, err := page.Timeout(time.Millisecond * 500).Element("._2oGJR")
+		//if ele == nil {
+		//	ele, err = page.Timeout(time.Millisecond * 500).Element("._1lyVV")
+		//}
 		if err != nil || ele == nil {
 			return
 		}
@@ -126,7 +129,8 @@ func AutoContinue(page *rod.Page) {
 		if ele.MustProperty("ariaDisabled").Str() == "true" {
 			return
 		}
-		ele.MustClick()
+		page.Keyboard.Type(input.Enter)
+		//_ = ele.Click(proto.InputMouseButtonLeft, 1)
 		page.MustWaitLoad()
 	}
 }
