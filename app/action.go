@@ -1,13 +1,8 @@
 package app
 
 import (
-	"fmt"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
-	"github.com/go-rod/rod/lib/proto"
-	"log"
-	"strings"
-	"time"
 )
 
 type Action uint8
@@ -41,98 +36,57 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 		switch a.Type {
 		case START:
 			pg.MustNavigate("https://www.duolingo.com/lesson")
-			AutoContinue(pg)
-			page <- pg
-		case CONTINUE:
-			ele, _ := pg.Sleeper(rod.NotFoundSleeper).Element("#session\\/PlayerFooter > div > div.MYehf > button")
-			if ele != nil {
-				_ = ele.Click(proto.InputMouseButtonLeft, 1)
-			}
-			AutoContinue(pg)
-			page <- pg
 		case MATCH:
-			clickOption(pg, a.OptionValue, "._231NG")
-			AutoContinue(pg)
-			page <- pg
+			pg.MustEval(`(txt) => document.querySelector('button[data-test="' + txt + '-challenge-tap-token"]')?.click()`, a.OptionValue)
 		case SOUND:
-			clickOption(pg, a.OptionValue, ".lEvgJ")
-			AutoContinue(pg)
-			page <- pg
+			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('span[data-test="challenge-judge-text"]')).find(x => x.innerText == txt)?.click()`, a.OptionValue)
 		case FillInBlank:
-			clickOption(pg, a.OptionValue, ".lEvgJ")
-			AutoContinue(pg)
-			page <- pg
+			//clickOption(pg, a.OptionValue, ".lEvgJ")
 		case WhichOne:
-			clickOption(pg, a.OptionValue, "._1NM0v")
-			AutoContinue(pg)
-			page <- pg
+			//clickOption(pg, a.OptionValue, "._1NM0v")
 		case CHARACTER:
-			clickOption(pg, a.OptionValue, ".APqdQ")
-			AutoContinue(pg)
-			page <- pg
+			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('div[data-test="challenge-choice"]')).find(x => x.firstChild.innerText == txt)?.click()`, a.OptionValue)
 		case ENGLISH:
-			text := a.EnglishChips
-			chips := pg.MustElementsByJS(`() => document.querySelector(".eSgkc").children`)
-			for _, t := range text {
-				for _, chip := range chips {
-					btn := chip.MustElement("button")
-					if btn.MustProperty("ariaDisabled").Str() == "true" {
-						continue
-					}
-					if strings.ToUpper(btn.MustText()) == strings.ToUpper(t) {
-						btn.MustClick()
-						break
-					}
+			pg.MustEval(`(words) => {
+					for (let i = 0; i < words.length; i++) {
+				    let word = words[i];
+				    Array.prototype.slice.call(document.querySelectorAll('button[data-test="' + word + '-challenge-tap-token"]')).find(x => x.ariaDisabled == 'false')?.click();
 				}
-			}
-			AutoContinue(pg)
-			page <- pg
+			}`, a.EnglishChips)
 		case JAPANESE:
-			text := a.JapaneseTranslate
-			fmt.Printf("Writing: %v\n", text)
 			inputBox := pg.MustElement("._2OQj6")
 			inputBox.MustFocus()
-			pg.MustInsertText(text)
-			AutoContinue(pg)
-			page <- pg
+			pg.MustInsertText(a.JapaneseTranslate)
 		case PLAY:
 			pg.Keyboard.Press(input.ControlLeft)
 			pg.Keyboard.Press(input.Space)
 			pg.Keyboard.Release(input.Space)
 			pg.Keyboard.Release(input.ControlLeft)
-			page <- pg
-		default:
-			page <- pg
-			log.Printf("Invalid Action %v\n", action)
-			continue
+		case CONTINUE:
 		}
+		AutoContinue(pg)
+		page <- pg
 		doneAction <- true
 	}
 }
 
-func clickOption(pg *rod.Page, opt string, selector string) {
-	els := pg.Timeout(time.Millisecond * 300).MustElements(selector)
-	for _, e := range els {
-		if e.MustText() == opt {
-			e.MustClick()
-			return
-		}
-	}
-}
-
 func AutoContinue(page *rod.Page) {
+	// Robust Auto-continue function
 	for {
 		page.MustWaitLoad()
-		ele, err := page.Timeout(time.Millisecond * 500).Element("._2oGJR")
-		//if ele == nil {
-		//	ele, err = page.Timeout(time.Millisecond * 500).Element("._1lyVV")
-		//}
-		if err != nil || ele == nil {
+		// If the button does not exist then what to click? Just return
+		if page.MustEval(`() => document.querySelector('button[data-test="player-next"]') == null`).Bool() {
 			return
 		}
-		if ele.MustProperty("ariaDisabled").Str() == "true" {
+		// If the answer is incorrect then return
+		if !page.MustEval(`() => document.querySelector('div[data-test="blame blame-incorrect"]') == null`).Bool() {
 			return
 		}
-		ele.MustClick()
+		// If the button is disabled then also return
+		if page.MustEval(`() => document.querySelector('button[data-test="player-next"]')?.ariaDisabled == 'true'`).Bool() {
+			return
+		}
+		// Click on the next button
+		page.MustEval(`() => document.querySelector('button[data-test="player-next"]')?.click()`)
 	}
 }

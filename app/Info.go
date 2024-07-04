@@ -11,58 +11,53 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 		pg := <-page
 		pg.MustWaitLoad()
 		heading := pg.MustElement("h1").MustText()
-		erra, _ := pg.Sleeper(rod.NotFoundSleeper).Element("._2jz5U")
+		erra, _ := pg.Eval(`() => document.querySelector('div[data-test="blame blame-incorrect"]').querySelector('div[dir="ltr"]').innerText`)
 		var rightAnswer string
 		if erra != nil {
-			rightAnswer = pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('._2jz5U span')).map(x => x.innerText).join('')").Str()
-			if rightAnswer == "" {
-				rightAnswer = erra.MustText()
-			}
+			rightAnswer = erra.Value.Str()
 		}
+		options := make([]string, 0)
 
 		if strings.Contains(heading, "What sound does this make") {
 			prompt := pg.MustEval("() => document.querySelector('._25SW8').innerText").Str()
-			options := make([]string, 0, 10)
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
+			options = append([]string{})
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('span[data-test="challenge-judge-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
 				Type:        GuessSound,
 				Title:       heading,
 				Prompt:      prompt,
-				Options:     options,
+				Options:     options[:min(len(options), 4)],
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Select the correct character") {
-			options := make([]string, 0, 10)
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.APqdQ')).map(x => x.innerText)").Val().([]interface{}) {
+			options = append([]string{})
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('div[data-test="challenge-choice"]')).map(x => x.firstChild.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
 				Type:        SelectCharacter,
 				Title:       heading,
 				Prompt:      "",
-				Options:     options,
+				Options:     options[:min(len(options), 4)],
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Tap the matching pairs") || strings.Contains(heading, "Select the matching pairs") {
-			options := make([]string, 0, 10)
-			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll(".WxjqG")).map(x => x.querySelector("._231NG").innerText)`).Val().([]interface{}) {
+			options = append([]string{})
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('span[data-test="challenge-tap-token-text"]')).filter(x => document.querySelector('button[data-test="' + x.innerText + '-challenge-tap-token"]').ariaDisabled == 'false').map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
-				if len(options) == 10 {
-					break
-				}
 			}
 			info <- Challenge{
 				Type:        Matching,
 				Title:       heading,
 				Prompt:      "",
-				Options:     options,
+				Options:     options[:min(len(options), 10)],
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Fill in the blank") {
 			prompt := pg.MustEval("() => Array.prototype.slice.call(document.querySelector('._3gSoe').children[0].children).map(x => x.className == '_5HFLU' ? x.innerText : '_______').join('')").Str()
-			options := make([]string, 0, 10)
+			options = append([]string{})
 			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
@@ -74,7 +69,7 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Which one of these is") {
-			options := make([]string, 0, 10)
+			options = append([]string{})
 			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('._1NM0v')).map(x => x.innerText)").Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
@@ -86,7 +81,7 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 			}
 		} else if strings.Contains(heading, "Select the correct meaning") {
 			prompt := pg.MustEval("() => document.querySelector('._2L10X').innerText").Str()
-			options := make([]string, 0, 10)
+			options = append([]string{})
 			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
@@ -98,9 +93,8 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Read and respond") {
-			//prompt := pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('._5HFLU')).map(x => x.innerText).join('\n')").Str()
 			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
-			options := make([]string, 0, 10)
+			options = append([]string{})
 			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
@@ -113,8 +107,8 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 			}
 		} else if strings.Contains(heading, "Write this in English") {
 			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
-			options := make([]string, 0, 10)
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelector('.eSgkc').children).map(x => x.innerText)").Val().([]interface{}) {
+			options = append([]string{})
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('div[data-test="word-bank"] span[data-test="challenge-tap-token-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
