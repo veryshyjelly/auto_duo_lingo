@@ -17,7 +17,7 @@ func DoAction(action chan app.ActionData, doneAction chan bool, doGetInfo chan b
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 		}
-		log.Printf("doing action: %v", data)
+		log.Printf("doing action: %#v", data)
 		action <- data
 		doGetInfo <- <-doneAction
 		information := <-info

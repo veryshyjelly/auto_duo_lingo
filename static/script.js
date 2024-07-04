@@ -33,59 +33,61 @@ let errorBox = document.getElementById("error");
 let rightAnswer = document.getElementById('right-answer');
 
 textArea.onchange = () => errorBox.classList.contains("hidden") ? '' : errorBox.classList.add("hidden")
+let last_selection = '';
 
 const update = () => {
     console.log(`data = ${JSON.stringify(data, null, 2)}`)
 
-    textArea.value = ''
-    wordBank.innerHTML = ''
-    optionPadLeft.innerHTML = ''
-    optionPadRight.innerHTML = ''
+    textArea.value = '';
+    wordBank.innerHTML = '';
+    optionPadLeft.innerHTML = '';
+    optionPadRight.innerHTML = '';
     prompt.innerHTML = data ? data.prompt : "";
-    rightAnswer.innerHTML = data?.rightAnswer ? data.rightAnswer : ""
-    heading.innerHTML = (data && data.title) ? data.title : "Start Lesson"
-    textArea.classList.contains("hidden") ? '' : textArea.classList.add("hidden")
+    rightAnswer.innerHTML = data?.rightAnswer ? data.rightAnswer : "";
+    heading.innerHTML = (data && data.title) ? data.title : "Start Lesson";
+    if (!textArea.classList.contains("hidden")) textArea.classList.add("hidden");
 
     switch (data?.type) {
         case ChallengeType.GuessSound: case ChallengeType.SelectCharacter:
-            case ChallengeType.FillInTheBlank: case ChallengeType.WhichOneOfThese:
+        case ChallengeType.FillInTheBlank: case ChallengeType.WhichOneOfThese:
             for (let opt of data.options) {
-                let btn = document.createElement('button')
-                btn.classList.add('btn', 'btn-guess-sound')
+                let btn = document.createElement('button');
+                btn.classList.add('btn');
                 data.type === ChallengeType.GuessSound ?
                     btn.classList.add('btn-guess-sound') : data.type === ChallengeType.SelectCharacter ?
-                        btn.classList.add('btn-select-character') : btn.classList.add('btn-fill-blank')
-                btn.innerHTML = opt
-                btn.onclick = () => submit(opt)
+                        btn.classList.add('btn-select-character') : btn.classList.add('btn-fill-blank');
+                btn.innerHTML = opt;
+                btn.onclick = () => submit(opt);
                 optionPadLeft.appendChild(btn);
             }
-            break
+            break;
         case ChallengeType.Matching:
             let left = 0;
             for (let opt of data.options) {
-                let btn = document.createElement('button')
-                btn.classList.add('btn', 'btn-matching')
-                btn.innerHTML = opt
-                btn.onclick = () => submit(opt)
-                left < data.options.length/2 ? optionPadLeft.appendChild(btn) : optionPadRight.appendChild(btn)
-                left++
+                let btn = document.createElement('button');
+                btn.classList.add('btn', 'btn-matching');
+                if (opt === last_selection) btn.classList.add('btn-selected');
+                btn.innerHTML = opt;
+                btn.onclick = () => {submit(opt); btn.classList.add('btn-selected'); last_selection = opt;}
+                if (left < data.options.length/2) {optionPadLeft.appendChild(btn)} else optionPadRight.appendChild(btn);
+                left++;
             }
-            break
+            break;
         case ChallengeType.ToEnglish:
-            textArea.classList.remove("hidden")
+            textArea.classList.remove("hidden");
             for (let opt of data.options) {
-                let btn = document.createElement('button')
-                btn.classList.add('btn', 'btn-english-chip')
-                btn.innerHTML = opt
-                btn.onclick = () => textArea.value += ' ' + opt
+                let btn = document.createElement('button');
+                btn.classList.add('btn', 'btn-english-chip');
+                btn.innerHTML = opt;
+                btn.onclick = () => textArea.value = (textArea.value+' '+ opt).trim();
                 wordBank.appendChild(btn);
             }
-            break
+            break;
         case ChallengeType.ToJapanese:
-            textArea.classList.remove("hidden")
-            break
+            textArea.classList.remove("hidden");
+            break;
         default:
-            break
+            break;
     }
 }
 
@@ -132,8 +134,9 @@ const submit = (option = null) => {
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.onreadystatechange = () => {
         if (xhr.readyState === 4 && xhr.status === 200) {
-            data = JSON.parse(xhr.response)
-            update()
+            data = JSON.parse(xhr.response);
+            update();
+            document.getElementById('inputString').focus();
         }
     };
 
@@ -157,7 +160,7 @@ const submit = (option = null) => {
             actionData.type = ActionType.WhichOne
             break
         case ChallengeType.ToEnglish:
-            let chips = getChips(data.options, textArea.value)
+            let chips = getChips(data.options, textArea.value.trim())
             if (chips == null) {
                 errorBox.classList.remove("hidden");
                 return
@@ -181,7 +184,6 @@ const submit = (option = null) => {
     }
 
     xhr.send(JSON.stringify(actionData));
-    document.getElementById('inputString').focus()
 }
 
 const play = () => {

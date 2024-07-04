@@ -9,12 +9,15 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 	for {
 		_ = <-do
 		pg := <-page
-		//pg.MustWaitLoad()
+		pg.MustWaitLoad()
 		heading := pg.MustElement("h1").MustText()
 		erra, _ := pg.Sleeper(rod.NotFoundSleeper).Element("._2jz5U")
 		var rightAnswer string
 		if erra != nil {
-			rightAnswer = erra.MustText()
+			rightAnswer = pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('._2jz5U span')).map(x => x.innerText).join('')").Str()
+			if rightAnswer == "" {
+				rightAnswer = erra.MustText()
+			}
 		}
 
 		if strings.Contains(heading, "What sound does this make") {
@@ -46,6 +49,9 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 			options := make([]string, 0, 10)
 			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll(".WxjqG")).map(x => x.querySelector("._231NG").innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
+				if len(options) == 10 {
+					break
+				}
 			}
 			info <- Challenge{
 				Type:        Matching,
@@ -86,6 +92,20 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 			}
 			info <- Challenge{
 				Type:        GuessSound,
+				Title:       heading,
+				Prompt:      prompt,
+				Options:     options,
+				RightAnswer: rightAnswer,
+			}
+		} else if strings.Contains(heading, "Read and respond") {
+			//prompt := pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('._5HFLU')).map(x => x.innerText).join('\n')").Str()
+			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
+			options := make([]string, 0, 10)
+			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
+				options = append(options, opt.(string))
+			}
+			info <- Challenge{
+				Type:        FillInTheBlank,
 				Title:       heading,
 				Prompt:      prompt,
 				Options:     options,

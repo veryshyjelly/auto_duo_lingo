@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/input"
+	"github.com/go-rod/rod/lib/proto"
 	"log"
 	"strings"
 	"time"
@@ -43,7 +44,10 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 			AutoContinue(pg)
 			page <- pg
 		case CONTINUE:
-			pg.Keyboard.Type(input.Enter)
+			ele, _ := pg.Sleeper(rod.NotFoundSleeper).Element("#session\\/PlayerFooter > div > div.MYehf > button")
+			if ele != nil {
+				_ = ele.Click(proto.InputMouseButtonLeft, 1)
+			}
 			AutoContinue(pg)
 			page <- pg
 		case MATCH:
@@ -85,7 +89,7 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 			page <- pg
 		case JAPANESE:
 			text := a.JapaneseTranslate
-			fmt.Printf("Writing: %v", text)
+			fmt.Printf("Writing: %v\n", text)
 			inputBox := pg.MustElement("._2OQj6")
 			inputBox.MustFocus()
 			pg.MustInsertText(text)
@@ -107,17 +111,18 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 }
 
 func clickOption(pg *rod.Page, opt string, selector string) {
-	els := pg.MustElements(selector)
+	els := pg.Timeout(time.Millisecond * 300).MustElements(selector)
 	for _, e := range els {
 		if e.MustText() == opt {
 			e.MustClick()
-			break
+			return
 		}
 	}
 }
 
 func AutoContinue(page *rod.Page) {
 	for {
+		page.MustWaitLoad()
 		ele, err := page.Timeout(time.Millisecond * 500).Element("._2oGJR")
 		//if ele == nil {
 		//	ele, err = page.Timeout(time.Millisecond * 500).Element("._1lyVV")
@@ -125,12 +130,9 @@ func AutoContinue(page *rod.Page) {
 		if err != nil || ele == nil {
 			return
 		}
-		fmt.Println("aria-disabled: ", ele.MustProperty("ariaDisabled"))
 		if ele.MustProperty("ariaDisabled").Str() == "true" {
 			return
 		}
-		page.Keyboard.Type(input.Enter)
-		//_ = ele.Click(proto.InputMouseButtonLeft, 1)
-		page.MustWaitLoad()
+		ele.MustClick()
 	}
 }
