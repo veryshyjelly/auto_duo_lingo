@@ -11,11 +11,9 @@ type Action uint8
 const (
 	START Action = iota
 	CONTINUE
-	SOUND
 	MATCH
-	CHARACTER
 	FillInBlank
-	WhichOne
+	CHARACTER
 	ENGLISH
 	JAPANESE
 	PLAY
@@ -28,10 +26,9 @@ type ActionData struct {
 	JapaneseTranslate string   `json:"japaneseTranslate"`
 }
 
-func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan bool) {
+func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan bool) {
 	for {
 		a := <-action
-		pg := <-page
 		switch a.Type {
 		case START:
 			// If already started a lesson then we should try to continue 🫡
@@ -46,22 +43,17 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 			// No filtering required 🤌 directly click the button using data field
 			log.Printf("Matching option 🤹‍♀️: %v\n", a.OptionValue)
 			pg.MustEval(`(txt) => document.querySelector('[data-test="' + txt + '-challenge-tap-token"]')?.click()`, a.OptionValue)
-		case SOUND:
+		case FillInBlank:
 			log.Printf("Chossing sound 🔉: %v\n", a.OptionValue)
 			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"]')).find(x => x.innerText == txt)?.click()`, a.OptionValue)
-		case FillInBlank:
-			//clickOption(pg, a.OptionValue, ".lEvgJ")
-		case WhichOne:
-			//clickOption(pg, a.OptionValue, "._1NM0v")
 		case CHARACTER:
-			// First child 👶 has the text we want to compare
-			log.Printf("Choosing character 💌: %v\n", a.OptionValue)
-			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-choice"]')).find(x => x.firstChild.innerText == txt)?.click()`, a.OptionValue)
+			log.Printf("Choosing option 🎡: %v\n", a.OptionValue)
+			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-choice"] [dir="ltr"]')).find(x => x.innerText == txt).click()`, a.OptionValue)
 		case ENGLISH:
 			// Javascript that will click👆 the words in O(n) total time complexity🚅
 			log.Printf("Clicking english chips 🍟: %v\n", a.EnglishChips)
 			pg.MustEval(`(words) => {
-				for (let i = 0; i < words.length; i++) {
+				for (let i = 0; i < words?.length; i++) {
 				    let word = words[i];
 				    document.querySelector('[data-test="word-bank"] [data-test="' + word + '-challenge-tap-token"][aria-disabled="false"]')?.click();
 				}
@@ -81,7 +73,6 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan b
 			pg.MustEval(`() => document.querySelector('[data-test="player-next"]')?.click()`)
 		}
 		AutoContinue(pg)
-		page <- pg
 		doneAction <- true
 	}
 }

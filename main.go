@@ -12,18 +12,16 @@ import (
 )
 
 func main() {
-	l := launcher.New().Bin("C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe").
-		Headless(true).UserDataDir("../bd/")
-	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect().Trace(false)
+	l := launcher.New().Headless(true).UserDataDir("../bd/")
+	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect()
 	defer browser.Close()
 
 	action := make(chan app.ActionData, 1)
 	doneAction := make(chan bool, 1)
-	page := make(chan *rod.Page, 1)
 	info := make(chan app.Challenge, 1)
 	doGetInfo := make(chan bool, 1)
 
-	page <- browser.MustPage("https://www.duolingo.com/").
+	page := browser.MustPage("https://www.duolingo.com/").
 		MustSetViewport(1920, 1080, 1, false).MustWindowMaximize()
 
 	go app.HandleAction(action, page, doneAction)

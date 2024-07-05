@@ -1,8 +1,7 @@
 body, html {
-    height: 100%;
+    height: 966px;
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
-    /*overflow: hidden;*/
 }
 
 .container {
@@ -48,7 +47,7 @@ h1 {
     flex-wrap: wrap;
     justify-content: center;
     margin-top: auto;
-    margin-bottom: 140px;
+    margin-bottom: 100px;
 }
 
 .btn-primary {
@@ -124,6 +123,16 @@ h1 {
     border: 2px solid #37464f;
 }
 
+.btn-english-submit {
+    color: black;
+    font-size: large;
+    padding: 12px;
+    margin: 20px 5px 0 0;
+    box-shadow: 0 0;
+    border: 2px solid #85cb38;
+    background-color: #a2e838;
+}
+
 #option-pad {
     display: flex;
 }
@@ -157,4 +166,24 @@ h1 {
     height: 20px;
     justify-self: left;
     --animated-speaker-icon-color: #50d3ff;
+}
+
+.progress-bar {
+    height: 24px;
+    background-color: #37464f;
+    border-radius: 12px;
+    overflow: hidden;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.progress-bar-fill {
+    width: 0%;
+    background-size: 100% 100%;
+    background-position: 0px 0px,0px 0px,0px 0px,0px 0px,0px 0px;
+    background-image: repeating-linear-gradient(315deg, #00FFFF2E 92%, #073AFF00 100%),repeating-radial-gradient(75% 75% at 238% 218%, #00FFFF12 30%, #073AFF14 39%),radial-gradient(99% 99% at 109% 2%, #00C9FFFF 0%, #073AFF00 100%),radial-gradient(99% 99% at 21% 78%, #7B00FFFF 0%, #073AFF00 100%),radial-gradient(160% 154% at 711px -303px, #2000FFFF 0%, #073AFFFF 100%);
+    /*background-image: linear-gradient(to right, #f1a165, #f36d0a);*/
+    border-radius: 12px;
+    transition: width 0.4s ease;
+    height: 24px;
 }

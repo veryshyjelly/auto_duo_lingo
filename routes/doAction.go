@@ -18,6 +18,7 @@ func DoAction(action chan app.ActionData, doneAction chan bool, doGetInfo chan b
 			w.Write([]byte(err.Error()))
 		}
 		action <- data
+		log.Println("scraping webpage 🃏")
 		doGetInfo <- <-doneAction
 		information := <-info
 		log.Printf("returning info ℹ️: %v\n", information)

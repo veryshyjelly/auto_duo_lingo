@@ -3,24 +3,20 @@ let data = null;
 const ActionType = {
     START  : 0,
     CONTINUE : 1,
-    SOUND : 2,
-    MATCH: 3,
-    CHARACTER : 4,
-    FillInBlank : 5,
-    WhichOne: 6,
-    ENGLISH : 7,
-    JAPANESE : 8,
-    PLAY: 9
+    MATCH: 2,
+    FillInBlank : 3,
+    CHARACTER: 4,
+    ENGLISH : 5,
+    JAPANESE : 6,
+    PLAY: 7
 }
 const ChallengeType = {
-    GuessSound : 0,
-    SelectCharacter : 1,
-    Matching : 2,
-    FillInTheBlank : 3,
-    WhichOneOfThese: 4,
-    ToEnglish : 5,
-    ToJapanese : 6,
-    Nothing : 7
+    SelectCharacter : 0,
+    Matching : 1,
+    FillInTheBlank : 2,
+    ToEnglish : 3,
+    ToJapanese : 4,
+    Nothing : 5
 }
 
 let heading = document.getElementById("heading");
@@ -31,6 +27,7 @@ let optionPadLeft = document.getElementById("option-left");
 let optionPadRight = document.getElementById("option-right");
 let errorBox = document.getElementById("error");
 let rightAnswer = document.getElementById('right-answer');
+let progressBar = document.querySelector(".progress-bar-fill");
 
 textArea.onchange = () => errorBox.classList.contains("hidden") ? '' : errorBox.classList.add("hidden")
 let last_selection = '';
@@ -45,16 +42,16 @@ const update = () => {
     prompt.innerHTML = data ? data.prompt : "";
     rightAnswer.innerHTML = data?.rightAnswer ? data.rightAnswer : "";
     heading.innerHTML = (data && data.title) ? data.title : "Start Lesson";
+    progressBar.style.width = data?.progress + '%'
     if (!textArea.classList.contains("hidden")) textArea.classList.add("hidden");
 
     switch (data?.type) {
-        case ChallengeType.GuessSound: case ChallengeType.SelectCharacter:
-        case ChallengeType.FillInTheBlank: case ChallengeType.WhichOneOfThese:
+         case ChallengeType.SelectCharacter:
+        case ChallengeType.FillInTheBlank:
             for (let opt of data.options) {
                 let btn = document.createElement('button');
                 btn.classList.add('btn');
-                data.type === ChallengeType.GuessSound ?
-                    btn.classList.add('btn-guess-sound') : data.type === ChallengeType.SelectCharacter ?
+                data.type === ChallengeType.SelectCharacter ?
                         btn.classList.add('btn-select-character') : btn.classList.add('btn-fill-blank');
                 btn.innerHTML = opt;
                 btn.onclick = () => submit(opt);
@@ -144,9 +141,6 @@ const submit = (option = null) => {
     actionData.optionValue = option ? option : '';
 
     switch (data?.type) {
-        case ChallengeType.GuessSound:
-            actionData.type = ActionType.SOUND
-            break
         case ChallengeType.SelectCharacter:
             actionData.type = ActionType.CHARACTER
             break
@@ -156,11 +150,8 @@ const submit = (option = null) => {
         case ChallengeType.FillInTheBlank:
             actionData.type = ActionType.FillInBlank
             break
-        case ChallengeType.WhichOneOfThese:
-            actionData.type = ActionType.WhichOne
-            break
         case ChallengeType.ToEnglish:
-            let chips = getChips(data.options, textArea.value.trim())
+            let chips = getChips(data.options, textArea.value.replaceAll(' ', ''))
             if (chips == null) {
                 errorBox.classList.remove("hidden");
                 return
@@ -199,4 +190,7 @@ const clearAll = () => textArea.value = '';
 
 update()
 
-fetch("/info").then(res => res.json()).then(d => {data = d; update()});
+fetch("/info").then(res => res.json()).then(d => {
+    data = d;
+    update()
+});

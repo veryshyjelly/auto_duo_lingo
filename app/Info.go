@@ -5,10 +5,9 @@ import (
 	"strings"
 )
 
-func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
+func GetInfo(do chan bool, info chan Challenge, pg *rod.Page) {
 	for {
 		_ = <-do
-		pg := <-page
 		pg.MustWaitLoad()
 		heading := pg.MustElementByJS(`() => document.querySelector("h1") || document.querySelector("h2")`).MustText()
 		erra, _ := pg.Eval(`() => document.querySelector('[data-test="blame blame-incorrect"]')?.querySelector('[dir="ltr"]')?.innerText`)
@@ -17,27 +16,73 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 			rightAnswer = erra.Value.Str()
 		}
 		options := make([]string, 0)
+		progress := pg.MustEval(`() => Math.min(Math.ceil(document.querySelector('[role="progressbar"]')?.ariaValueNow * 100), 100)`).Int()
 
 		if strings.Contains(heading, "What sound does this make") {
-			prompt := pg.MustEval("() => document.querySelector('._25SW8').innerText").Str()
-			options = append([]string{})
+			prompt := pg.MustEval(`() => document.querySelector('[data-test="challenge challenge-characterIntro"] [dir="ltr"]').innerText`).Str()
+			options = []string{}
 			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
-				Type:        GuessSound,
+				Type:        FillInTheBlank,
+				Progress:    progress,
 				Title:       heading,
 				Prompt:      prompt,
 				Options:     options[:min(len(options), 4)],
 				RightAnswer: rightAnswer,
 			}
-		} else if strings.Contains(heading, "Select the correct character") {
-			options = append([]string{})
-			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-choice"]')).map(x => x.firstChild.innerText)`).Val().([]interface{}) {
+		} else if strings.Contains(heading, "Fill in the blank") {
+			prompt := pg.MustEval(`() => document.querySelector('[data-test="challenge challenge-gapFill"] [dir="ltr"]').innerText.replace('\n', '_____')`).Str()
+			options = []string{}
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
+				options = append(options, opt.(string))
+			}
+			info <- Challenge{
+				Type:        FillInTheBlank,
+				Progress:    progress,
+				Title:       heading,
+				Prompt:      prompt,
+				Options:     options,
+				RightAnswer: rightAnswer,
+			}
+		} else if strings.Contains(heading, "Select the correct meaning") {
+			prompt := pg.MustEval(`() => document.querySelector('[data-test="challenge challenge-assist"] [dir="ltr"]').innerText`).Str()
+			options = []string{}
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
+				options = append(options, opt.(string))
+			}
+			info <- Challenge{
+				Type:        FillInTheBlank,
+				Progress:    progress,
+				Title:       heading,
+				Prompt:      prompt,
+				Options:     options,
+				RightAnswer: rightAnswer,
+			}
+		} else if strings.Contains(heading, "Read and respond") {
+			// TODO remove the class name
+			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
+			options = []string{}
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
+				options = append(options, opt.(string))
+			}
+			info <- Challenge{
+				Type:        FillInTheBlank,
+				Progress:    progress,
+				Title:       heading,
+				Prompt:      prompt,
+				Options:     options,
+				RightAnswer: rightAnswer,
+			}
+		} else if strings.Contains(heading, "Select the correct character") || strings.Contains(heading, "Which one of these is") {
+			options = []string{}
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-choice"] [dir="ltr"]')).filter(x => x.innerText).map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
 				Type:        SelectCharacter,
+				Progress:    progress,
 				Title:       heading,
 				Prompt:      "",
 				Options:     options[:min(len(options), 4)],
@@ -50,78 +95,31 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 			}
 			info <- Challenge{
 				Type:        Matching,
+				Progress:    progress,
 				Title:       heading,
 				Prompt:      "",
 				Options:     options[:min(len(options), 10)],
 				RightAnswer: rightAnswer,
 			}
-		} else if strings.Contains(heading, "Fill in the blank") {
-			prompt := pg.MustEval("() => Array.prototype.slice.call(document.querySelector('._3gSoe').children[0].children).map(x => x.className == '_5HFLU' ? x.innerText : '_______').join('')").Str()
-			options = append([]string{})
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
-				options = append(options, opt.(string))
-			}
-			info <- Challenge{
-				Type:        FillInTheBlank,
-				Title:       heading,
-				Prompt:      prompt,
-				Options:     options,
-				RightAnswer: rightAnswer,
-			}
-		} else if strings.Contains(heading, "Which one of these is") {
-			options = append([]string{})
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('._1NM0v')).map(x => x.innerText)").Val().([]interface{}) {
-				options = append(options, opt.(string))
-			}
-			info <- Challenge{
-				Type:        WhichOneOfThese,
-				Title:       heading,
-				Options:     options,
-				RightAnswer: rightAnswer,
-			}
-		} else if strings.Contains(heading, "Select the correct meaning") {
-			prompt := pg.MustEval("() => document.querySelector('._2L10X').innerText").Str()
-			options = append([]string{})
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
-				options = append(options, opt.(string))
-			}
-			info <- Challenge{
-				Type:        GuessSound,
-				Title:       heading,
-				Prompt:      prompt,
-				Options:     options,
-				RightAnswer: rightAnswer,
-			}
-		} else if strings.Contains(heading, "Read and respond") {
-			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
-			options = append([]string{})
-			for _, opt := range pg.MustEval("() => Array.prototype.slice.call(document.querySelectorAll('.lEvgJ')).map(x => x.innerText)").Val().([]interface{}) {
-				options = append(options, opt.(string))
-			}
-			info <- Challenge{
-				Type:        FillInTheBlank,
-				Title:       heading,
-				Prompt:      prompt,
-				Options:     options,
-				RightAnswer: rightAnswer,
-			}
 		} else if strings.Contains(heading, "Write this in English") {
-			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
-			options = append([]string{})
+			prompt := pg.MustEval(`() => document.querySelector('[data-test="challenge challenge-translate"] [dir="ltr"]').innerText`).Str()
+			options = []string{}
 			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="word-bank"] [data-test="challenge-tap-token-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
 				Type:        ToEnglish,
+				Progress:    progress,
 				Title:       heading,
 				Prompt:      prompt,
 				Options:     options,
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Write this in Japanese") {
-			prompt := pg.MustEval("() => document.querySelector('._5HFLU').innerText").Str()
+			prompt := pg.MustEval(`() => document.querySelector('[data-test="challenge challenge-translate"] [dir="ltr"]').innerText`).Str()
 			info <- Challenge{
 				Type:        ToJapanese,
+				Progress:    progress,
 				Title:       heading,
 				Prompt:      prompt,
 				Options:     nil,
@@ -130,6 +128,5 @@ func GetInfo(do chan bool, info chan Challenge, page chan *rod.Page) {
 		} else {
 			info <- Challenge{Type: Nothing}
 		}
-		page <- pg
 	}
 }
