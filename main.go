@@ -9,12 +9,11 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 	"log"
 	"net/http"
-	"time"
 )
 
 func main() {
-	l := launcher.New().Bin("C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe").Headless(false).UserDataDir("../bd/")
-	//l := launcher.New().Bin("msedgedriver.exe").Headless(true).UserDataDir("../bd/")
+	l := launcher.New().Bin("C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe").
+		Headless(true).UserDataDir("../bd/")
 	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect().Trace(false)
 	defer browser.Close()
 
@@ -24,11 +23,8 @@ func main() {
 	info := make(chan app.Challenge, 1)
 	doGetInfo := make(chan bool, 1)
 
-	pg := browser.MustPage("https://www.duolingo.com/").
+	page <- browser.MustPage("https://www.duolingo.com/").
 		MustSetViewport(1920, 1080, 1, false).MustWindowMaximize()
-	page <- pg
-
-	time.Sleep(time.Second * 2)
 
 	go app.HandleAction(action, page, doneAction)
 	go app.GetInfo(doGetInfo, info, page)

@@ -17,10 +17,10 @@ func DoAction(action chan app.ActionData, doneAction chan bool, doGetInfo chan b
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
 		}
-		log.Printf("doing action: %#v", data)
 		action <- data
 		doGetInfo <- <-doneAction
 		information := <-info
+		log.Printf("returning info ℹ️: %v\n", information)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(information)
