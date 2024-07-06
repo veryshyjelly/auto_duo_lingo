@@ -89,16 +89,17 @@ func GetInfo(do chan bool, info chan Challenge, pg *rod.Page) {
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Tap the matching pairs") || strings.Contains(heading, "Select the matching pairs") {
+			prompt := pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-tap-token-text"]')).find(x => document.querySelector('[data-test="' + x.innerText + '-challenge-tap-token"]').ariaDisabled == 'false')?.innerText || ''`).Str()
 			options = append([]string{})
-			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-tap-token-text"]')).filter(x => document.querySelector('[data-test="' + x.innerText + '-challenge-tap-token"]').ariaDisabled == 'false').map(x => x.innerText)`).Val().([]interface{}) {
+			for _, opt := range pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-tap-token-text"]')).map(x => x.innerText)`).Val().([]interface{}) {
 				options = append(options, opt.(string))
 			}
 			info <- Challenge{
 				Type:        Matching,
 				Progress:    progress,
 				Title:       heading,
-				Prompt:      "",
-				Options:     options[:min(len(options), 10)],
+				Prompt:      prompt,
+				Options:     options[5:10],
 				RightAnswer: rightAnswer,
 			}
 		} else if strings.Contains(heading, "Write this in English") {

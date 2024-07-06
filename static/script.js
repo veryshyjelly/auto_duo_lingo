@@ -44,30 +44,30 @@ const update = () => {
     heading.innerHTML = (data && data.title) ? data.title : "Start Lesson";
     progressBar.style.width = data?.progress + '%'
     if (!textArea.classList.contains("hidden")) textArea.classList.add("hidden");
+    if (!errorBox.classList.contains("hidden")) errorBox.classList.add("hidden")
 
     switch (data?.type) {
          case ChallengeType.SelectCharacter:
         case ChallengeType.FillInTheBlank:
             for (let opt of data.options) {
                 let btn = document.createElement('button');
-                btn.classList.add('btn');
-                data.type === ChallengeType.SelectCharacter ?
-                        btn.classList.add('btn-select-character') : btn.classList.add('btn-fill-blank');
+                btn.classList.add('btn', 'btn-select-character');
                 btn.innerHTML = opt;
                 btn.onclick = () => submit(opt);
                 optionPadLeft.appendChild(btn);
             }
             break;
         case ChallengeType.Matching:
-            let left = 0;
             for (let opt of data.options) {
                 let btn = document.createElement('button');
-                btn.classList.add('btn', 'btn-matching');
-                if (opt === last_selection) btn.classList.add('btn-selected');
+                btn.classList.add('btn');
+                btn.classList.add('btn-matching');
                 btn.innerHTML = opt;
-                btn.onclick = () => {submit(opt); btn.classList.add('btn-selected'); last_selection = opt;}
-                if (left < data.options.length/2) {optionPadLeft.appendChild(btn)} else optionPadRight.appendChild(btn);
-                left++;
+                btn.onclick = () => {
+                    submit(data.prompt);
+                    submit(opt);
+                }
+                optionPadLeft.appendChild(btn);
             }
             break;
         case ChallengeType.ToEnglish:
@@ -193,4 +193,11 @@ update()
 fetch("/info").then(res => res.json()).then(d => {
     data = d;
     update()
+});
+
+textArea.addEventListener("keypress", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        submit();
+    }
 });
