@@ -7,14 +7,16 @@ import (
 	"net/http"
 )
 
-func GetInfo(doGetInfo chan bool, info chan app.Challenge) func(w http.ResponseWriter, r *http.Request) {
+func GetInfo(doGetInfo chan interface{}, info chan app.Challenge) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Println("scraping webpage 🃏")
 		doGetInfo <- true
+
 		information := <-info
 		log.Printf("returning info ℹ️: %v\n", information)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(information)
+		_ = json.NewEncoder(w).Encode(information)
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan bool) {
+func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan interface{}) {
 	for {
 		a := <-action
 		switch a.Type {

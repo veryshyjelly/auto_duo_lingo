@@ -3,19 +3,31 @@ package app
 import (
 	"github.com/go-rod/rod"
 	"strings"
+	"time"
 )
 
-func GetInfo(do chan bool, info chan Challenge, pg *rod.Page) {
+func GetInfo(do chan interface{}, info chan Challenge, pg *rod.Page) {
 	for {
-		_ = <-do
-		pg.MustWaitLoad()
+		<-do
 
-		options := make([]string, 0)
+		_ = pg.WaitDOMStable(time.Millisecond*200, 0)
+
 		heading := pg.MustElementByJS(`() => document.querySelector("h1") || document.querySelector("h2")`).MustText()
-		rightAnswer := pg.MustEval(`() => document.querySelector('[data-test="blame blame-incorrect"]')?.querySelector('[dir="ltr"]')?.innerText || ''`).Str()
 		progress := pg.MustEval(`() => Math.min(Math.ceil(document.querySelector('[role="progressbar"]')?.ariaValueNow * 100), 100)`).Int()
-		_ = pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"], [data-test="challenge-tap-token-text"], [data-test="challenge-choice"] [dir="ltr"]'))?.filter(x => x.innerText)?.map(x => x.innerText) || []`).Unmarshal(&options)
-		prompt := pg.MustEval(`() => document.querySelector('[data-test="challenge challenge-characterIntro"] [dir="ltr"], [data-test="challenge challenge-gapFill"] [dir="ltr"], [data-test="challenge challenge-assist"] [dir="ltr"], [data-test="challenge challenge-translate"] [dir="ltr"]')?.innerText?.replace('\n', '_____') || ''`).Str()
+		rightAnswer := pg.MustEval(`() => document.querySelector('
+						[data-test="blame blame-incorrect"]
+					')?.querySelector('[dir="ltr"]')?.innerText || ''`).Str()
+		prompt := pg.MustEval(`() => document.querySelector('
+						[data-test="challenge challenge-characterIntro"] [dir="ltr"], 
+						[data-test="challenge challenge-gapFill"] [dir="ltr"], 
+						[data-test="challenge challenge-assist"] [dir="ltr"], 
+						[data-test="challenge challenge-translate"] [dir="ltr"]
+					')?.innerText?.replace('\n', '_____') || ''`).Str()
+		options := pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('
+						[data-test="challenge-judge-text"], 
+						[data-test="challenge-tap-token-text"], 
+						[data-test="challenge-choice"] [dir="ltr"]
+					'))?.filter(x => x.innerText)?.map(x => x.innerText) || []`).Val().([]interface{})
 
 		information := Challenge{
 			Type:        Nothing,
@@ -25,14 +37,18 @@ func GetInfo(do chan bool, info chan Challenge, pg *rod.Page) {
 			RightAnswer: rightAnswer,
 		}
 
-		if strings.Contains(heading, "What sound does this make") || strings.Contains(heading, "Select the correct meaning") || strings.Contains(heading, "Fill in the blank") || strings.Contains(heading, "Read and respond") || strings.Contains(heading, "Select the correct character") || strings.Contains(heading, "Which one of these is") {
+		if strings.Contains(heading, "What sound does this make") ||
+			strings.Contains(heading, "Select the correct") ||
+			strings.Contains(heading, "Fill in the blank") ||
+			strings.Contains(heading, "Read and respond") ||
+			strings.Contains(heading, "Which one of these is") {
 			information.Options = options[:min(len(options), 4)]
 			information.Type = ChooseOption
 		} else if strings.Contains(heading, "Tap the matching pairs") || strings.Contains(heading, "Select the matching pairs") {
 			information.Type = Matching
 			// We need to do this extra stuff for more efficiency 🙂
 			information.Prompt = pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-tap-token-text"]')).find(x => document.querySelector('[data-test="' + x.innerText + '-challenge-tap-token"]').ariaDisabled == 'false')?.innerText || ''`).Str()
-			information.Options = options[len(options)/2 : min(10, len(options))]
+			information.Options = options[min(len(options)/2, 10):min(10, len(options))]
 		} else if strings.Contains(heading, "Write this in English") {
 			information.Options = options
 			information.Type = ToEnglish

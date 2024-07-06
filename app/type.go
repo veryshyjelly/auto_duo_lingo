@@ -15,7 +15,7 @@ type Challenge struct {
 	Progress    int           `json:"progress"`
 	Title       string        `json:"title"`
 	Prompt      string        `json:"prompt"`
-	Options     []string      `json:"options"`
+	Options     []interface{} `json:"options"`
 	RightAnswer string        `json:"rightAnswer"`
 }
 
