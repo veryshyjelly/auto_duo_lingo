@@ -28,12 +28,10 @@ let rightAnswer = document.getElementById('right-answer');
 let progressBar = document.querySelector(".progress-bar-fill");
 
 textArea.onchange = () => errorBox.classList.contains("hidden") ? '' : errorBox.classList.add("hidden")
-let last_selection = '';
 
 const update = () => {
     console.log(`data = ${JSON.stringify(data, null, 2)}`)
 
-    textArea.value = '';
     wordBank.innerHTML = '';
     optionPadLeft.innerHTML = '';
     optionPadRight.innerHTML = '';
@@ -85,6 +83,13 @@ const update = () => {
     }
 }
 
+const fetchNUpdate = () => {
+    fetch("/info").then(res => res.json()).then(d => {
+        data = d;
+        update()
+    });
+}
+
 function getChips(strings, target) {
     function helper(target, used) {
         if (target === "") {
@@ -94,7 +99,6 @@ function getChips(strings, target) {
         for (let i = 0; i < strings.length; i++) {
             if (!used[i]) {
                 const s = strings[i];
-
                 // Check without space
                 if (target.toUpperCase().startsWith(s.toUpperCase())) {
                     used[i] = true;
@@ -104,7 +108,6 @@ function getChips(strings, target) {
                     }
                     used[i] = false;
                 }
-
                 // Check with space
                 if (target.toUpperCase().startsWith(" " + s.toUpperCase())) {
                     used[i] = true;
@@ -116,7 +119,6 @@ function getChips(strings, target) {
                 }
             }
         }
-
         return null;
     }
     return helper(target, Array(strings.length).fill(false));
@@ -130,7 +132,9 @@ const submit = (option = null) => {
         if (xhr.readyState === 4 && xhr.status === 200) {
             data = JSON.parse(xhr.response);
             update();
-            document.getElementById('inputString').focus();
+            for (let i = 1; i < 5; i++) setTimeout(fetchNUpdate, i*400);
+            textArea.value = '';
+            textArea.focus();
         }
     };
 
@@ -182,16 +186,11 @@ const play = () => {
 
 const clearAll = () => textArea.value = '';
 
-update()
-
-fetch("/info").then(res => res.json()).then(d => {
-    data = d;
-    update()
-});
-
 textArea.addEventListener("keypress", e => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         submit();
     }
 });
+
+fetchNUpdate();

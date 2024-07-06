@@ -20,13 +20,15 @@ func main() {
 	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect()
 	defer browser.MustClose()
 
+	page := make(chan *rod.Page, 1)
 	action := make(chan app.ActionData, 1)
 	doneAction := make(chan interface{}, 1)
 	info := make(chan app.Challenge, 1)
 	doGetInfo := make(chan interface{}, 1)
 
-	page := browser.MustPage("https://www.duolingo.com/").
+	pg := browser.MustPage("https://www.duolingo.com/").
 		MustSetViewport(1920, 1080, 1, false).MustWindowMaximize()
+	page <- pg // Having it this way prevent multiply usage of page in any case 🦺
 
 	// Start the handlers on a different thread 🧵
 	go app.HandleAction(action, page, doneAction)

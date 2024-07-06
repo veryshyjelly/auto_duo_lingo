@@ -3,30 +3,28 @@ package app
 import (
 	"github.com/go-rod/rod"
 	"strings"
-	"time"
 )
 
-func GetInfo(do chan interface{}, info chan Challenge, pg *rod.Page) {
+func GetInfo(do chan interface{}, info chan Challenge, page chan *rod.Page) {
 	for {
 		<-do
-
-		_ = pg.WaitDOMStable(time.Millisecond*200, 0)
+		pg := <-page
 
 		heading := pg.MustElementByJS(`() => document.querySelector("h1") || document.querySelector("h2")`).MustText()
 		progress := pg.MustEval(`() => Math.min(Math.ceil(document.querySelector('[role="progressbar"]')?.ariaValueNow * 100), 100)`).Int()
-		rightAnswer := pg.MustEval(`() => document.querySelector('
-						[data-test="blame blame-incorrect"]
-					')?.querySelector('[dir="ltr"]')?.innerText || ''`).Str()
-		prompt := pg.MustEval(`() => document.querySelector('
-						[data-test="challenge challenge-characterIntro"] [dir="ltr"], 
-						[data-test="challenge challenge-gapFill"] [dir="ltr"], 
-						[data-test="challenge challenge-assist"] [dir="ltr"], 
-						[data-test="challenge challenge-translate"] [dir="ltr"]
+		rightAnswer := pg.MustEval(`() => document.querySelector(
+						'[data-test="blame blame-incorrect"]'
+					)?.querySelector('[dir="ltr"]')?.innerText || ''`).Str()
+		prompt := pg.MustEval(`() => document.querySelector(' \
+						[data-test="challenge challenge-characterIntro"] [dir="ltr"], \
+						[data-test="challenge challenge-gapFill"] [dir="ltr"], \
+						[data-test="challenge challenge-assist"] [dir="ltr"], \
+						[data-test="challenge challenge-translate"] [dir="ltr"] \
 					')?.innerText?.replace('\n', '_____') || ''`).Str()
-		options := pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll('
-						[data-test="challenge-judge-text"], 
-						[data-test="challenge-tap-token-text"], 
-						[data-test="challenge-choice"] [dir="ltr"]
+		options := pg.MustEval(`() => Array.prototype.slice.call(document.querySelectorAll(' \
+						[data-test="challenge-judge-text"], \
+						[data-test="challenge-tap-token-text"], \
+						[data-test="challenge-choice"] [dir="ltr"] \
 					'))?.filter(x => x.innerText)?.map(x => x.innerText) || []`).Val().([]interface{})
 
 		information := Challenge{
@@ -56,6 +54,7 @@ func GetInfo(do chan interface{}, info chan Challenge, pg *rod.Page) {
 			information.Type = ToJapanese
 		}
 
+		page <- pg
 		info <- information
 	}
 }

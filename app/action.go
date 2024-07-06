@@ -6,9 +6,10 @@ import (
 	"log"
 )
 
-func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan interface{}) {
+func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan interface{}) {
 	for {
 		a := <-action
+		pg := <-page
 		switch a.Type {
 		case START:
 			// If already started a lesson then we should try to continue 🫡
@@ -41,15 +42,16 @@ func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan interfac
 			pg.MustElementByJS(`() => document.querySelector('[data-test="challenge-translate-input"]')`).MustFocus()
 			pg.MustInsertText(a.JapaneseTranslate)
 		case PLAY:
-			pg.Keyboard.Press(input.ControlLeft)
-			pg.Keyboard.Press(input.Space)
-			pg.Keyboard.Release(input.Space)
-			pg.Keyboard.Release(input.ControlLeft)
+			_ = pg.Keyboard.Press(input.ControlLeft)
+			_ = pg.Keyboard.Press(input.Space)
+			_ = pg.Keyboard.Release(input.Space)
+			_ = pg.Keyboard.Release(input.ControlLeft)
 		case CONTINUE:
 			log.Println("Clicking next button ✅")
 			pg.MustEval(`() => document.querySelector('[data-test="player-next"]')?.click()`)
 		}
 		AutoContinue(pg)
+		page <- pg
 		doneAction <- true
 	}
 }
