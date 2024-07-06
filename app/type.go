@@ -3,9 +3,8 @@ package app
 type ChallengeType uint8
 
 const (
-	SelectCharacter ChallengeType = iota
-	Matching
-	FillInTheBlank
+	Matching ChallengeType = iota
+	ChooseOption
 	ToEnglish
 	ToJapanese
 	Nothing
@@ -18,4 +17,23 @@ type Challenge struct {
 	Prompt      string        `json:"prompt"`
 	Options     []string      `json:"options"`
 	RightAnswer string        `json:"rightAnswer"`
+}
+
+type Action uint8
+
+const (
+	START Action = iota
+	CONTINUE
+	MATCH
+	CHOOSE
+	ENGLISH
+	JAPANESE
+	PLAY
+)
+
+type ActionData struct {
+	Type              Action   `json:"type"`
+	OptionValue       string   `json:"optionValue"`
+	EnglishChips      []string `json:"englishChips"`
+	JapaneseTranslate string   `json:"japaneseTranslate"`
 }

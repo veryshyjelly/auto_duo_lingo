@@ -4,19 +4,17 @@ const ActionType = {
     START  : 0,
     CONTINUE : 1,
     MATCH: 2,
-    FillInBlank : 3,
-    CHARACTER: 4,
-    ENGLISH : 5,
-    JAPANESE : 6,
-    PLAY: 7
+    CHOOSE : 3,
+    ENGLISH : 4,
+    JAPANESE : 5,
+    PLAY: 6
 }
 const ChallengeType = {
-    SelectCharacter : 0,
-    Matching : 1,
-    FillInTheBlank : 2,
-    ToEnglish : 3,
-    ToJapanese : 4,
-    Nothing : 5
+    Matching : 0,
+    ChooseOption : 1,
+    ToEnglish : 2,
+    ToJapanese : 3,
+    Nothing : 4
 }
 
 let heading = document.getElementById("heading");
@@ -47,8 +45,7 @@ const update = () => {
     if (!errorBox.classList.contains("hidden")) errorBox.classList.add("hidden")
 
     switch (data?.type) {
-         case ChallengeType.SelectCharacter:
-        case ChallengeType.FillInTheBlank:
+         case ChallengeType.ChooseOption:
             for (let opt of data.options) {
                 let btn = document.createElement('button');
                 btn.classList.add('btn', 'btn-select-character');
@@ -141,14 +138,11 @@ const submit = (option = null) => {
     actionData.optionValue = option ? option : '';
 
     switch (data?.type) {
-        case ChallengeType.SelectCharacter:
-            actionData.type = ActionType.CHARACTER
-            break
         case ChallengeType.Matching:
             actionData.type = ActionType.MATCH
             break
-        case ChallengeType.FillInTheBlank:
-            actionData.type = ActionType.FillInBlank
+        case ChallengeType.ChooseOption:
+            actionData.type = ActionType.CHOOSE
             break
         case ChallengeType.ToEnglish:
             let chips = getChips(data.options, textArea.value.replaceAll(' ', ''))

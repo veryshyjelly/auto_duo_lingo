@@ -6,26 +6,6 @@ import (
 	"log"
 )
 
-type Action uint8
-
-const (
-	START Action = iota
-	CONTINUE
-	MATCH
-	FillInBlank
-	CHARACTER
-	ENGLISH
-	JAPANESE
-	PLAY
-)
-
-type ActionData struct {
-	Type              Action   `json:"type"`
-	OptionValue       string   `json:"optionValue"`
-	EnglishChips      []string `json:"englishChips"`
-	JapaneseTranslate string   `json:"japaneseTranslate"`
-}
-
 func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan bool) {
 	for {
 		a := <-action
@@ -43,12 +23,9 @@ func HandleAction(action chan ActionData, pg *rod.Page, doneAction chan bool) {
 			// No filtering required 🤌 directly click the button using data field
 			log.Printf("Matching option 🤹‍♀️: %v\n", a.OptionValue)
 			pg.MustEval(`(txt) => document.querySelector('[data-test="' + txt + '-challenge-tap-token"]')?.click()`, a.OptionValue)
-		case FillInBlank:
-			log.Printf("Chossing sound 🔉: %v\n", a.OptionValue)
-			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"]')).find(x => x.innerText == txt)?.click()`, a.OptionValue)
-		case CHARACTER:
+		case CHOOSE:
 			log.Printf("Choosing option 🎡: %v\n", a.OptionValue)
-			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-choice"] [dir="ltr"]')).find(x => x.innerText == txt).click()`, a.OptionValue)
+			pg.MustEval(`(txt) => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-judge-text"], [data-test="challenge-choice"] [dir="ltr"]')).find(x => x.innerText == txt)?.click()`, a.OptionValue)
 		case ENGLISH:
 			// Javascript that will click👆 the words in O(n) total time complexity🚅
 			log.Printf("Clicking english chips 🍟: %v\n", a.EnglishChips)

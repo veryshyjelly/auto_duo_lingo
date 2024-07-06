@@ -9,12 +9,18 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
-	l := launcher.New().Headless(true).UserDataDir("../bd/")
+	headless := true
+	if len(os.Args) > 1 && os.Args[1] == "head" {
+		headless = false
+	}
+
+	l := launcher.New().Headless(headless).UserDataDir("../bd/")
 	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect()
-	defer browser.Close()
+	defer browser.MustClose()
 
 	action := make(chan app.ActionData, 1)
 	doneAction := make(chan bool, 1)
