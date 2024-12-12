@@ -2,21 +2,20 @@ package routes
 
 import (
 	"auto_duo_lingo/app"
-	"encoding/json"
 	"log"
-	"net/http"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func GetInfo(doGetInfo chan interface{}, info chan app.Challenge) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func GetInfo(doGetInfo chan interface{}, info chan app.Challenge) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+
 		log.Println("scraping webpage 🃏")
 		doGetInfo <- true
 
 		information := <-info
 		log.Printf("returning info ℹ️: %v\n", information)
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(information)
+		return c.JSON(information)
 	}
 }

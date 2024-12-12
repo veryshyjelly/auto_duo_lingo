@@ -1,20 +1,20 @@
 let data = null;
 
 const ActionType = {
-    START  : 0,
-    CONTINUE : 1,
+    START: 0,
+    CONTINUE: 1,
     MATCH: 2,
-    CHOOSE : 3,
-    ENGLISH : 4,
-    JAPANESE : 5,
+    CHOOSE: 3,
+    ENGLISH: 4,
+    JAPANESE: 5,
     PLAY: 6
 }
 const ChallengeType = {
-    Matching : 0,
-    ChooseOption : 1,
-    ToEnglish : 2,
-    ToJapanese : 3,
-    Nothing : 4
+    Matching: 0,
+    ChooseOption: 1,
+    ToEnglish: 2,
+    ToJapanese: 3,
+    Nothing: 4
 }
 
 let heading = document.getElementById("heading");
@@ -43,7 +43,7 @@ const update = () => {
     if (!errorBox.classList.contains("hidden")) errorBox.classList.add("hidden")
 
     switch (data?.type) {
-         case ChallengeType.ChooseOption:
+        case ChallengeType.ChooseOption:
             for (let opt of data.options) {
                 let btn = document.createElement('button');
                 btn.classList.add('btn', 'btn-select-character');
@@ -71,7 +71,7 @@ const update = () => {
                 let btn = document.createElement('button');
                 btn.classList.add('btn', 'btn-english-chip');
                 btn.innerHTML = opt;
-                btn.onclick = () => textArea.value = (textArea.value+' '+ opt).trim();
+                btn.onclick = () => typeInTextArea(opt + ' ', textArea);
                 wordBank.appendChild(btn);
             }
             break;
@@ -81,6 +81,11 @@ const update = () => {
         default:
             break;
     }
+}
+
+function typeInTextArea(newText, el = document.activeElement) {
+    const [start, end] = [el.selectionStart, el.selectionEnd];
+    el.setRangeText(newText, start, end, 'select');
 }
 
 const fetchNUpdate = () => {
@@ -132,7 +137,7 @@ const submit = (option = null) => {
         if (xhr.readyState === 4 && xhr.status === 200) {
             data = JSON.parse(xhr.response);
             update();
-            for (let i = 1; i < 5; i++) setTimeout(fetchNUpdate, i*400);
+            for (let i = 1; i < 5; i++) setTimeout(fetchNUpdate, i * 400);
             textArea.value = '';
             textArea.focus();
         }

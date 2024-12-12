@@ -1,15 +1,17 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
     <title>Duolingo</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<div class="container">
+    <div class="container">
         <div class="progress-bar">
-             <div class="progress-bar-fill"></div>
+            <div class="progress-bar-fill"></div>
         </div>
 
         <h1>
@@ -19,28 +21,30 @@
 
         <div id="prompt"></div>
 
-    <label for="inputString"></label>
-    <textarea class="" id="inputString" name="inputString" placeholder="Type your text here" autofocus></textarea>
+        <label for="inputString"></label>
+        <textarea class="" id="inputString" name="inputString" placeholder="Type your text here" autofocus></textarea>
 
 
-    <div class="word-bank" id="word-bank"></div>
-    <div class="option-pad" id="option-pad">
-        <div id="option-left"></div>
-        <div id="option-right"></div>
-    </div>
+        <div class="word-bank" id="word-bank"></div>
+        <div class="option-pad" id="option-pad">
+            <div id="option-left"></div>
+            <div id="option-right"></div>
+        </div>
 
-    <div id="error" class="hidden">
-        !! couldn't form the text using available options
-    </div>
+        <div id="error" class="hidden">
+            !! couldn't form the text using available options
+        </div>
 
-    <div id="right-answer"></div>
+        <div id="right-answer"></div>
 
         <div class="button-box">
-            <button type="button" class="btn" style="font-size: large; margin-right: 140px" onclick="clearAll()">Clear</button>
-            <button type="button" class="btn-primary"  onclick="submit()">Continue</button>
+            <button type="button" class="btn" style="font-size: large; margin-right: 1rem"
+                onclick="clearAll()">Clear</button>
+            <button type="button" class="btn-primary" onclick="submit()">Continue</button>
         </div>
-</div>
+    </div>
 
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
+
 </html>

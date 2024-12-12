@@ -29,6 +29,7 @@ const (
 	ENGLISH
 	JAPANESE
 	PLAY
+	REFRESH
 )
 
 type ActionData struct {

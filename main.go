@@ -3,11 +3,14 @@ package main
 import (
 	"auto_duo_lingo/app"
 	"auto_duo_lingo/routes"
+	"log"
+	"net"
+	"os"
+
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
-	"log"
-	"net/http"
-	"os"
+	"github.com/go-rod/rod/lib/proto"
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
@@ -20,25 +23,51 @@ func main() {
 	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect()
 	defer browser.MustClose()
 
+	// u := os.Args[1]
+	// browser := rod.New().ControlURL(u).MustConnect()
+
 	page := make(chan *rod.Page, 1)
 	action := make(chan app.ActionData, 1)
 	doneAction := make(chan interface{}, 1)
 	info := make(chan app.Challenge, 1)
 	doGetInfo := make(chan interface{}, 1)
 
-	pg := browser.MustPage("https://www.duolingo.com/").
-		MustSetViewport(1920, 1080, 1, false).MustWindowMaximize()
+	pg := browser.MustPage("https://www.duolingo.com/").MustWindowMaximize()
+	pg.MustSetViewport(1536, 776, 1, false)
 	page <- pg // Having it this way prevent multiply usage of page in any case 🦺
 
 	// Start the handlers on a different thread 🧵
 	go app.HandleAction(action, page, doneAction)
 	go app.GetInfo(doGetInfo, info, page)
 
-	// Register the http routes ⛲
-	http.Handle("/", http.FileServer(http.Dir("static")))
-	http.HandleFunc("/info", routes.GetInfo(doGetInfo, info))
-	http.HandleFunc("/action", routes.DoAction(action, doneAction, doGetInfo, info))
+	app := fiber.New()
 
-	log.Println("server started at http://localhost:8001")
-	log.Panicln(http.ListenAndServe(":8001", nil))
+	// Register the http routes ⛲
+	app.Static("/", "./static")
+	app.Get("/info", routes.GetInfo(doGetInfo, info))
+	app.Get("/action", routes.DoAction(action, doneAction, doGetInfo, info))
+	app.Get("/connect", routes.Connect(action, doneAction, doGetInfo, info))
+
+	app.Listen(":8080")
+}
+
+func GetOutboundIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
+}
+
+func block(ctx *rod.Hijack) {
+	// use NetworkResourceTypeScript for javascript files, there're a lot of types you can use in this enum
+	if ctx.Request.Type() == proto.NetworkResourceTypeImage {
+		ctx.Response.Fail(proto.NetworkErrorReasonBlockedByClient)
+		return
+	}
+	ctx.ContinueRequest(&proto.FetchContinueRequest{})
 }
