@@ -7,10 +7,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Connect(action chan app.ActionData, doneAction chan interface{}, doGetInfo chan interface{}, info chan app.Challenge) fiber.Handler {
+func Connect(action chan app.ActionData, doneAction chan interface{}, server *app.Server) fiber.Handler {
 	return websocket.New(func(conn *websocket.Conn) {
 		client := app.NewClient(conn)
-		go client.Listen(action, doneAction)
-		client.Serve(doGetInfo, info)
+		server.AddClient(&client)
+		server.Update <- true
+		go client.Listen(action, doneAction, server)
+		client.Serve(server)
 	})
 }

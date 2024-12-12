@@ -50,8 +50,6 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan i
 		case CONTINUE:
 			log.Println("Clicking next button ✅")
 			pg.MustEval(`() => document.querySelector('[data-test=player-next]')?.click()`)
-		case REFRESH:
-			log.Println("[REFRESH]")
 		}
 		AutoContinue(pg)
 		page <- pg

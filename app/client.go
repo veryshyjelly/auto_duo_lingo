@@ -2,50 +2,45 @@ package app
 
 import (
 	"log"
-	"time"
 
 	"github.com/gofiber/contrib/websocket"
 )
 
 type Client struct {
 	Connection *websocket.Conn
+	Updates    chan Challenge
 }
 
 func NewClient(conn *websocket.Conn) Client {
 	return Client{
 		Connection: conn,
+		Updates:    make(chan Challenge, 100),
 	}
 }
 
-func (c *Client) Listen(action chan ActionData, doneAction chan interface{}) {
+func (c *Client) Listen(action chan ActionData, doneAction chan interface{}, server *Server) {
 	for {
 		var update ActionData
+
 		if err := c.Connection.ReadJSON(&update); err != nil {
-			log.Println("error while reading message from client", err)
-			c.Connection.Close()
+			log.Println("[ERROR] while reading message from client", err)
 			break
 		}
 
 		action <- update
 		log.Println("[DOING ACTION]")
 		<-doneAction
+		server.Update <- true
 	}
 }
 
-func (c *Client) Serve(doGetInfo chan interface{}, info chan Challenge) {
-	/*This function writes the updates to the client connection*/
-
+func (c *Client) Serve(server *Server) {
 	for {
-		log.Println("scraping webpage 🃏")
-		doGetInfo <- true
-		information := <-info
-
-		if err := c.Connection.WriteJSON(information); err != nil {
+		u := <-c.Updates
+		if err := c.Connection.WriteJSON(u); err != nil {
 			log.Println("[ERROR] error occurred writing update to client", err)
+			server.RemoveClient(c)
 			break
 		}
-
-		time.Sleep(time.Millisecond * 700)
 	}
-
 }

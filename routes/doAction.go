@@ -15,7 +15,7 @@ func DoAction(action chan app.ActionData, doneAction chan interface{}, doGetInfo
 		}
 		action <- data
 
-		log.Println("scraping webpage 🃏")
+		log.Println("[INFO]: scraping webpage 🃏")
 		doGetInfo <- <-doneAction
 		information := <-info
 
