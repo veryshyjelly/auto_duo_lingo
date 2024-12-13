@@ -5,6 +5,11 @@ export const start = (ws: WS) => {
     ws.current?.send(JSON.stringify(action))
 }
 
+export const proceed = (ws: WS) => {
+    let action = { type: Action.CONTINUE };
+    ws.current?.send(JSON.stringify(action))
+}
+
 export const chooseOption = (val: string, ws: WS) => {
     let data: ActionData = {
         type: Action.CHOOSE,

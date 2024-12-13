@@ -1,50 +1,14 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
-    <title>Duolingo</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-
-<body>
-    <div class="container">
-        <div class="progress-bar">
-            <div class="progress-bar-fill"></div>
-        </div>
-
-        <h1>
-            <span onclick="play()"><img src="mic.svg" class="mic" alt=""></span>
-            <span id="heading">Start Lesson</span>
-        </h1>
-
-        <div id="prompt"></div>
-
-        <label for="inputString"></label>
-        <textarea class="" id="inputString" name="inputString" placeholder="Type your text here" autofocus></textarea>
-
-
-        <div class="word-bank" id="word-bank"></div>
-        <div class="option-pad" id="option-pad">
-            <div id="option-left"></div>
-            <div id="option-right"></div>
-        </div>
-
-        <div id="error" class="hidden">
-            !! couldn't form the text using available options
-        </div>
-
-        <div id="right-answer"></div>
-
-        <div class="button-box">
-            <button type="button" class="btn" style="font-size: large; margin-right: 1rem"
-                onclick="clearAll()">Clear</button>
-            <button type="button" class="btn-primary" onclick="submit()">Continue</button>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React + TS</title>
+    <script type="module" crossorigin src="/assets/index-BdNp497t.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DgWqqNUw.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

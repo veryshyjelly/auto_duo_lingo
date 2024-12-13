@@ -8,17 +8,17 @@ const ToEnglish = ({ info, ws }: { info: Info, ws: WS }) => {
     const [input, setInput] = useState("");
     const [chips, setChips] = useState<string[]>([]);
 
-    const Option = ({ op }: { op: string }) => <div className="inline-flex m-1">
+    const Option = ({ op }: { op: string }) =>
         <Button onClick={() => {
             let res = input + " " + op;
             setChips(getChips(info.options || [], res) || []);
             setInput(res);
         }}
+            sx={{ borderRadius: "1rem", fontSize: "1rem", margin: "3px" }}
             color={chips.find((v) => v.toUpperCase() == op.toUpperCase()) ? "secondary" : "primary"}
             variant="outlined">
             {op}
         </Button>
-    </div>
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
@@ -73,9 +73,13 @@ const ToEnglish = ({ info, ws }: { info: Info, ws: WS }) => {
             {info.options?.map((v, i, _) => <Option op={v} key={i} />)}
         </div>
 
-        <div className="text-center mt-32">
+        <div className="text-red-700 text-xl text-center mt-10">
+            {info.rightAnswer}
+        </div>
+
+        <div className="text-center mt-20">
             <Button onClick={() => englishCheck(chips, ws)} variant="outlined" color="success">
-                <h1 className="text-2xl">Check</h1>
+                <h1 className="text-2xl mx-5">Check</h1>
             </Button>
         </div>
     </>)

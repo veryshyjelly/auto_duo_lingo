@@ -55,7 +55,11 @@ const ToJapanese = ({ info, ws }: { info: Info, ws: WS }) => {
             }}
         />
 
-        <div className="text-center mt-32">
+        <div className="text-red-700 text-xl text-center mt-10">
+            {info.rightAnswer}
+        </div>
+
+        <div className="text-center mt-20">
             <Button onClick={() => checkJapanese(input, ws)} variant="outlined" color="success">
                 <h1 className="text-2xl">Check</h1>
             </Button>

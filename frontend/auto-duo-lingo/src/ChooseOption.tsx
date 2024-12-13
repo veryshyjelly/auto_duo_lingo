@@ -29,6 +29,10 @@ const ChooseOption = ({ info, ws }: { info: Info, ws: WS }) => {
         </h2>
 
         {info.options?.map((v, i, _) => <Option op={v} key={i} />)}
+
+        <div className="text-red-700 text-xl text-center mt-10">
+            {info.rightAnswer}
+        </div>
     </>)
 }
 

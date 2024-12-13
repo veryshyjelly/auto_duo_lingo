@@ -1,6 +1,8 @@
 import { Chip, Container, IconButton } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AdjustIcon from '@mui/icons-material/Adjust';
+import { proceed } from "./Action";
 
 interface WebSocketComponentProps {
     addr: string;
@@ -61,15 +63,19 @@ export const WebSocketComponent: React.FC<WebSocketComponentProps> = ({ addr, ws
     }, [addr]); // Reconnect when `addr` changes
 
     return (
-        <Container fixed className='flex'>
+        <Container fixed className='flex justify-between'>
             <IconButton onClick={reconnectWebSocket} aria-label='refresh'>
                 <RefreshIcon />
             </IconButton>
             <Chip label={isConnected ? 'Connected' : 'Disconnected'}
                 color={isConnected ? 'success' : 'error'}
+                sx={{ fontSize: "1rem" }}
                 variant='outlined'
-                className='ml-auto my-4'
+                className='my-4'
             />
+            <IconButton onClick={() => proceed(ws)}>
+                <AdjustIcon />
+            </IconButton>
         </Container>
     );
 };
