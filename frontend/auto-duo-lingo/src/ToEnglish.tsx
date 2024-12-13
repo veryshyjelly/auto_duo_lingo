@@ -1,4 +1,4 @@
-import { Button, IconButton, InputAdornment, LinearProgress, TextField } from "@mui/material";
+import { Button, Chip, IconButton, InputAdornment, LinearProgress, TextField } from "@mui/material";
 import { Info, WS } from "./Types";
 import { useState } from "react";
 import ClearIcon from '@mui/icons-material/Clear';
@@ -9,16 +9,20 @@ const ToEnglish = ({ info, ws }: { info: Info, ws: WS }) => {
     const [chips, setChips] = useState<string[]>([]);
 
     const Option = ({ op }: { op: string }) =>
-        <Button onClick={() => {
+        <Chip onClick={() => {
             let res = input + " " + op;
             setChips(getChips(info.options || [], res) || []);
             setInput(res);
         }}
-            sx={{ borderRadius: "1rem", fontSize: "1rem", margin: "3px" }}
+            sx={{
+                borderRadius: "1rem", paddingX: "0.25rem", paddingY: "1.2rem",
+                fontSize: "1.25rem", margin: "3px"
+            }}
             color={chips.find((v) => v.toUpperCase() == op.toUpperCase()) ? "secondary" : "primary"}
-            variant="outlined">
-            {op}
-        </Button>
+            variant="outlined"
+            label={op}
+        />
+
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
