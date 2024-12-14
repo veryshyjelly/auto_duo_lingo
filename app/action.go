@@ -17,10 +17,9 @@ func HandleAction(action chan ActionData, page chan *rod.Page, doneAction chan i
 			if pg.MustInfo().URL == "https://www.duolingo.com/lesson" {
 				log.Println("Clicking next button ✅")
 				pg.MustEval(`() => document.querySelector('[data-test=player-next]')?.click()`)
-			} else {
-				log.Println("Starting new lesson 🏫")
-				pg.MustNavigate("https://www.duolingo.com/lesson")
 			}
+			log.Println("Starting new lesson 🏫")
+			pg.MustNavigate("https://www.duolingo.com/lesson")
 		case MATCH:
 			// No filtering required 🤌 directly click the button using data field
 			log.Printf("Matching option 🤹‍♀️: %v\n", a.OptionValue)

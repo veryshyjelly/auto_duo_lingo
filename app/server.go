@@ -49,7 +49,7 @@ func (s *Server) Serve(doGetInfo chan interface{}, info chan Challenge) {
 			}
 			s.mutex.Unlock()
 
-			time.Sleep(time.Millisecond * 250)
+			time.Sleep(time.Millisecond * 150)
 		}
 	}
 }
