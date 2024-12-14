@@ -91,7 +91,7 @@ export function getChips(strings: string[], target: string): string[] | null {
 
 const synonymsMap: Record<string, string[]> = {
     // Contractions
-    "I'm": ["I am", "I'm"],
+    "i'm": ["I am", "I'm"],
     "you're": ["you are", "you're"],
     "he's": ["he is", "he's", "he has"],
     "she's": ["she is", "she's", "she has",],
@@ -162,7 +162,7 @@ const synonymsMap: Record<string, string[]> = {
     "don't know": ["do not know", "don't know"],
     "isn't working": ["is not working", "isn't working"],
     "won't be": ["will not be", "won't be"],
-    "I'll": ["I will", "I'll"],
+    "i'll": ["I will", "I'll"],
     "you'll": ["you will", "you'll"],
     "he'll": ["he will", "he'll"],
     "she'll": ["she will", "she'll"],

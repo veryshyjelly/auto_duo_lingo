@@ -11,7 +11,7 @@ func Connect(action chan app.ActionData, doneAction chan interface{}, server *ap
 	return websocket.New(func(conn *websocket.Conn) {
 		client := app.NewClient(conn)
 		server.AddClient(&client)
-		server.Update <- true
+		server.Update()
 		go client.Listen(action, doneAction, server)
 		client.Serve(server)
 	})

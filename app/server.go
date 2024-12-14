@@ -9,15 +9,19 @@ import (
 type Server struct {
 	Clients map[*Client]bool
 	mutex   sync.Mutex
-	Update  chan interface{}
+	update  chan interface{}
 }
 
 func NewServer() Server {
 	return Server{
 		Clients: map[*Client]bool{},
 		mutex:   sync.Mutex{},
-		Update:  make(chan interface{}, 10),
+		update:  make(chan interface{}, 10),
 	}
+}
+
+func (s *Server) Update() {
+	s.update <- true
 }
 
 func (s *Server) AddClient(c *Client) {
@@ -34,8 +38,8 @@ func (s *Server) RemoveClient(c *Client) {
 
 func (s *Server) Serve(doGetInfo chan interface{}, info chan Challenge) {
 	for {
-		<-s.Update
-		s.Update = make(chan interface{}, 10)
+		<-s.update
+		s.update = make(chan interface{}, 10)
 		for i := 0; i < 10; i++ {
 			s.mutex.Lock()
 			if len(s.Clients) > 0 {
@@ -48,7 +52,6 @@ func (s *Server) Serve(doGetInfo chan interface{}, info chan Challenge) {
 				}
 			}
 			s.mutex.Unlock()
-
 			time.Sleep(time.Millisecond * 150)
 		}
 	}

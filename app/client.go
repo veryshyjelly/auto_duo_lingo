@@ -30,7 +30,7 @@ func (c *Client) Listen(action chan ActionData, doneAction chan interface{}, ser
 		action <- update
 		log.Println("[DOING ACTION]")
 		<-doneAction
-		server.Update <- true
+		server.Update()
 	}
 }
 
