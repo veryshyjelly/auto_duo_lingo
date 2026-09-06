@@ -1,0 +1,16 @@
+# Browser profile (Duolingo login session)
+../bd/
+
+# Go binaries
+*.exe
+
+# Frontend
+node_modules/
+frontend/auto-duo-lingo/dist/
+
+# Built UI served by Go (rebuilt via make build-ui)
+static/assets/
+static/index.html
+
+# IDE
+.idea/

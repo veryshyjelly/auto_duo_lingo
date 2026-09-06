@@ -3,28 +3,37 @@ package main
 import (
 	"auto_duo_lingo/app"
 	"auto_duo_lingo/routes"
+	"fmt"
 	"log"
 	"net"
 	"os"
 
 	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/launcher"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
-	headless := true
-	if len(os.Args) > 1 && os.Args[1] == "head" {
-		headless = false
+	cfg := app.LoadConfig()
+
+	mode, err := app.ParseBrowserMode(os.Args)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	l := launcher.New().Headless(headless).UserDataDir("../bd/")
-	browser := rod.New().ControlURL(l.MustLaunch()).MustConnect()
-	defer browser.MustClose()
+	app.LogLoginHelp(mode)
 
-	// u := os.Args[1]
-	// browser := rod.New().ControlURL(u).MustConnect()
+	var browser *rod.Browser
+	switch mode {
+	case "user":
+		browser, err = app.ConnectUserBrowser()
+	default:
+		browser, err = app.ConnectBrowser(cfg, app.IsVisibleMode(mode))
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer browser.MustClose()
 
 	page := make(chan *rod.Page, 1)
 	action := make(chan app.ActionData, 1)
@@ -32,41 +41,43 @@ func main() {
 	info := make(chan app.Challenge, 1)
 	doGetInfo := make(chan interface{}, 1)
 
-	pg := browser.MustPage("https://www.duolingo.com/").MustWindowMaximize()
-	pg.MustSetViewport(1536, 776, 1, false)
-	page <- pg // Having it this way prevent multiply usage of page in any case 🦺
+	pg := app.SetupPage(browser)
+	page <- pg
 
 	server := app.NewServer()
 
-	// Start the handlers on a different thread 🧵
-	go app.HandleAction(action, page, doneAction)
-	go app.GetInfo(doGetInfo, info, page)
+	go app.HandleAction(action, page, doneAction, cfg.DuolingoLessonURL)
+	go app.GetInfo(doGetInfo, info, page, cfg.TargetLang)
 	go server.Serve(doGetInfo, info)
 
-	app := fiber.New()
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*", // Allows all origins
-		AllowMethods: "*", // Allows all HTTP methods
-		AllowHeaders: "*", // Allows all headers
+	lanIP := getOutboundIP()
+	lanURL := fmt.Sprintf("http://%s:%s", lanIP, cfg.Port)
+	log.Printf("Open on your phone: %s", lanURL)
+	if cfg.AuthToken != "" {
+		log.Println("AUTH_TOKEN is set — WebSocket clients must pass ?token=...")
+	}
+
+	fiberApp := fiber.New()
+	fiberApp.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowMethods: "*",
+		AllowHeaders: "*",
 	}))
 
-	// Register the http routes ⛲
-	app.Static("/", "./static")
-	app.Get("/info", routes.GetInfo(doGetInfo, info))
-	app.Get("/action", routes.DoAction(action, doneAction, doGetInfo, info))
-	app.Get("/connect", routes.Connect(action, doneAction, &server))
+	fiberApp.Static("/", "./static")
+	fiberApp.Get("/status", routes.Status(&server, lanURL))
+	fiberApp.Get("/audio", routes.AudioProxy())
+	fiberApp.Get("/connect", routes.Connect(action, doneAction, &server, cfg.AuthToken))
 
-	app.Listen(":8080")
+	log.Fatal(fiberApp.Listen(":" + cfg.Port))
 }
 
-func GetOutboundIP() net.IP {
+func getOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("could not detect LAN IP: %v", err)
+		return "localhost"
 	}
 	defer conn.Close()
-
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-	return localAddr.IP
+	return conn.LocalAddr().(*net.UDPAddr).IP.String()
 }

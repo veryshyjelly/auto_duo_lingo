@@ -1,33 +1,60 @@
 import { Chip, Container, IconButton } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AdjustIcon from '@mui/icons-material/Adjust';
 import { proceed } from "./Action";
 
 interface WebSocketComponentProps {
-    addr: string;
     ws: React.MutableRefObject<WebSocket | null>
     setInfo: (info: string) => void
 }
 
-export const WebSocketComponent: React.FC<WebSocketComponentProps> = ({ addr, ws, setInfo }) => {
-    const [isConnected, setIsConnected] = useState(false);
+type ConnectionState = 'connected' | 'disconnected' | 'reconnecting';
 
-    // Function to create and set up the WebSocket connection
+function getWebSocketURL(): string {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const tokenQuery = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${protocol}//${window.location.host}/connect${tokenQuery}`;
+}
+
+export const WebSocketComponent: React.FC<WebSocketComponentProps> = ({ ws, setInfo }) => {
+    const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+    const reconnectAttempt = useRef(0);
+    const reconnectTimer = useRef<number | null>(null);
+    const shouldReconnect = useRef(true);
+
+    const clearReconnectTimer = () => {
+        if (reconnectTimer.current !== null) {
+            window.clearTimeout(reconnectTimer.current);
+            reconnectTimer.current = null;
+        }
+    };
+
+    const scheduleReconnect = () => {
+        if (!shouldReconnect.current) return;
+        setConnectionState('reconnecting');
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempt.current), 30000);
+        reconnectAttempt.current += 1;
+        clearReconnectTimer();
+        reconnectTimer.current = window.setTimeout(() => {
+            connectWebSocket();
+        }, delay);
+    };
+
     const connectWebSocket = () => {
-        // Close existing WebSocket if it exists
         if (ws.current) {
             ws.current.onclose = null;
             ws.current.close();
         }
 
-        // Create a new WebSocket instance
-        ws.current = new WebSocket(`ws://${addr}:8080/connect`);
+        ws.current = new WebSocket(getWebSocketURL());
 
-        // Set up WebSocket event listeners
         ws.current.onopen = () => {
             console.log("WebSocket connected");
-            setIsConnected(true);
+            reconnectAttempt.current = 0;
+            setConnectionState('connected');
         };
 
         ws.current.onmessage = (event: MessageEvent) => {
@@ -36,7 +63,8 @@ export const WebSocketComponent: React.FC<WebSocketComponentProps> = ({ addr, ws
 
         ws.current.onclose = () => {
             console.log("WebSocket disconnected");
-            setIsConnected(false);
+            setConnectionState('disconnected');
+            scheduleReconnect();
         };
 
         ws.current.onerror = (error: Event) => {
@@ -44,31 +72,41 @@ export const WebSocketComponent: React.FC<WebSocketComponentProps> = ({ addr, ws
         };
     };
 
-    // Reconnect WebSocket on demand
     const reconnectWebSocket = () => {
         console.log("Reconnecting WebSocket...");
+        reconnectAttempt.current = 0;
+        clearReconnectTimer();
         connectWebSocket();
     };
 
-    // Effect to connect WebSocket when the component mounts
     useEffect(() => {
+        shouldReconnect.current = true;
         connectWebSocket();
 
-        // Cleanup on unmount
         return () => {
+            shouldReconnect.current = false;
+            clearReconnectTimer();
             if (ws.current) {
                 ws.current.close();
             }
         };
-    }, [addr]); // Reconnect when `addr` changes
+    }, []);
+
+    const chipLabel = connectionState === 'connected'
+        ? 'Connected'
+        : connectionState === 'reconnecting'
+            ? 'Reconnecting…'
+            : 'Disconnected';
+
+    const chipColor = connectionState === 'connected' ? 'success' : 'error';
 
     return (
         <Container fixed className='flex justify-between'>
             <IconButton onClick={reconnectWebSocket} aria-label='refresh'>
                 <RefreshIcon />
             </IconButton>
-            <Chip label={isConnected ? 'Connected' : 'Disconnected'}
-                color={isConnected ? 'success' : 'error'}
+            <Chip label={chipLabel}
+                color={chipColor}
                 sx={{ fontSize: "1rem" }}
                 variant='outlined'
                 className='my-4'

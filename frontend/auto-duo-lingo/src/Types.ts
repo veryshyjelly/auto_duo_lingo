@@ -16,7 +16,10 @@ export type Info = {
     title?: string,
     prompt?: string,
     options?: string[],
-    rightAnswer?: string
+    rightAnswer?: string,
+    error?: string,
+    audioUrls?: string[],
+    hasAudio?: boolean,
 }
 
 export enum Action {

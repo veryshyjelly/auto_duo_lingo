@@ -44,6 +44,11 @@ export const englishCheck = (chips: string[], ws: WS) => {
     ws.current?.send(JSON.stringify(data));
 }
 
+export const playAudio = (ws: WS) => {
+    let action = { type: Action.PLAY };
+    ws.current?.send(JSON.stringify(action));
+}
+
 export function getChips(strings: string[], target: string): string[] | null {
     const lowercaseToIndex: Record<string, number> = {};
     for (let i = 0; i < strings.length; i++) {

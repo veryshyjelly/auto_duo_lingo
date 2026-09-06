@@ -15,8 +15,11 @@ type Challenge struct {
 	Progress    int           `json:"progress"`
 	Title       string        `json:"title"`
 	Prompt      string        `json:"prompt"`
-	Options     []interface{} `json:"options"`
+	Options     []string      `json:"options"`
 	RightAnswer string        `json:"rightAnswer"`
+	Error       string        `json:"error,omitempty"`
+	AudioUrls   []string      `json:"audioUrls,omitempty"`
+	HasAudio    bool          `json:"hasAudio"`
 }
 
 type Action uint8
