@@ -9,7 +9,6 @@ import { useLesson } from '../context/LessonContext';
 import { useChallengeKey } from '../hooks/useChallengeKey';
 import DuoShell from '../duo/DuoShell';
 import { DuoFooterButton } from '../duo/DuoFooter';
-import DuoAudio from '../duo/DuoAudio';
 import { useThemeMode } from '../context/ThemeModeContext';
 
 const STRIP_SELECTORS = 'script, iframe, noscript, object, embed, link, style, form, [class*="recaptcha"], [id*="recaptcha"], [data-sitekey], link[rel="modulepreload"], link[as="script"]';
@@ -652,10 +651,6 @@ export default function ChallengeMirror({ info, ws }: ChallengeMirrorProps) {
         ) : null
       }
     >
-      {(info.hasAudio || info.audioUrls?.length) && (
-        <DuoAudio info={info} ws={ws} />
-      )}
-
       <Box
         ref={hostRef}
         sx={{
