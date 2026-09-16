@@ -65,16 +65,15 @@ func scrapeChallenge(pg *rod.Page, targetLangHeading string) (Challenge, error) 
 	rightAnswer, _ := evalString(pg, `() => {
 		const blame = document.querySelector('[data-test="blame blame-incorrect"]');
 		if (!blame) return '';
-		const solution = blame.querySelector('[dir="ltr"]');
-		return solution?.innerText?.trim() || '';
+		const solution = blame.querySelector('[data-test="blame-solution"]')
+			|| blame.querySelector('[dir="ltr"]')
+			|| blame;
+		const clone = solution.cloneNode(true);
+		clone.querySelectorAll('rt').forEach((rt) => rt.remove());
+		return clone.textContent?.replace(/\s+/g, ' ').trim() || '';
 	}`)
 
-	prompt, _ := evalString(pg, `() => document.querySelector(' \
-		[data-test="challenge challenge-characterIntro"] [dir="ltr"], \
-		[data-test="challenge challenge-gapFill"] [dir="ltr"], \
-		[data-test="challenge challenge-assist"] [dir="ltr"], \
-		[data-test="challenge challenge-translate"] [dir="ltr"] \
-	')?.innerText?.replace('\n', '_____') || ''`)
+	prompt, _ := evalString(pg, scrapePromptJS())
 
 	options, _ := evalStringArray(pg, `() => Array.prototype.slice.call(document.querySelectorAll(' \
 		[data-test="challenge-judge-text"], \
@@ -82,13 +81,16 @@ func scrapeChallenge(pg *rod.Page, targetLangHeading string) (Challenge, error) 
 		[data-test="challenge-choice"] [dir="ltr"] \
 	')).filter(x => x.innerText).map(x => x.innerText)`)
 
+	optionImages := scrapeOptionImages(pg, len(options))
+
 	information := Challenge{
-		Type:        DetectChallengeType(heading, targetLangHeading),
-		Progress:    progress,
-		Title:       heading,
-		Prompt:      prompt,
-		Options:     options,
-		RightAnswer: rightAnswer,
+		Type:         DetectChallengeType(heading, targetLangHeading),
+		Progress:     progress,
+		Title:        heading,
+		Prompt:       prompt,
+		Options:      options,
+		OptionImages: optionImages,
+		RightAnswer:  rightAnswer,
 	}
 
 	if isTapTokenFillChallenge(pg, heading) {
@@ -110,6 +112,19 @@ func scrapeChallenge(pg *rod.Page, targetLangHeading string) (Challenge, error) 
 	information.AudioUrls = audioUrls
 	information.HasAudio = hasAudio
 
+	if isListenTapChallenge(pg, heading) {
+		information.Type = ToJapanese
+		information.Options = nil
+		information.HasAudio = true
+		ph, lang := scrapeTranslateInput(pg)
+		information.InputPlaceholder = ph
+		information.InputLang = lang
+	} else if information.Type == ToJapanese {
+		ph, lang := scrapeTranslateInput(pg)
+		information.InputPlaceholder = ph
+		information.InputLang = lang
+	}
+
 	if information.Type == Matching {
 		activePrompt, _ := evalString(pg, `() => Array.prototype.slice.call(document.querySelectorAll('[data-test="challenge-tap-token-text"]')).find(x => document.querySelector('[data-test="' + x.innerText + '-challenge-tap-token"]')?.ariaDisabled == 'false')?.innerText || ''`)
 		if activePrompt != "" {
@@ -117,10 +132,76 @@ func scrapeChallenge(pg *rod.Page, targetLangHeading string) (Challenge, error) 
 		}
 		if len(options) > 1 {
 			information.Options = options[len(options)/2:]
+			information.OptionImages = scrapeOptionImages(pg, len(information.Options))
 		}
 	}
 
+	if information.Prompt == "" {
+		information.Prompt = information.Title
+	}
+
+	if information.Type != Nothing {
+		information.ChallengeHTML, information.StyleHrefs, information.DesignTokens = scrapeChallengeMirror(pg)
+	}
+
 	return information, nil
+}
+
+func scrapePromptJS() string {
+	return `() => {
+		const selectors = [
+			'[data-test="challenge challenge-characterIntro"] h1',
+			'[data-test="challenge challenge-assist"] [data-test="challenge-prompt"]',
+			'[data-test="challenge challenge-characterMatch"] h1',
+			'[data-test="challenge challenge-gapFill"] [dir="ltr"]',
+			'[data-test="challenge challenge-assist"] [dir="ltr"]',
+			'[data-test="challenge challenge-translate"] [dir="ltr"]',
+			'[data-test="challenge challenge-characterIntro"] [dir="ltr"]',
+		];
+		for (const sel of selectors) {
+			const el = document.querySelector(sel);
+			if (el?.innerText?.trim()) return el.innerText.trim().replace(/\n/g, ' ');
+		}
+		return '';
+	}`
+}
+
+func scrapeOptionImages(pg *rod.Page, optionCount int) []string {
+	if optionCount == 0 {
+		return nil
+	}
+	images, _ := evalStringArray(pg, `() => {
+		const choices = document.querySelectorAll('[data-test="challenge-choice"]');
+		if (choices.length) {
+			return Array.from(choices).map(c => c.querySelector('img')?.src || '');
+		}
+		return [];
+	}`)
+	if len(images) == 0 {
+		return nil
+	}
+	// Pad or trim to match option count
+	out := make([]string, optionCount)
+	for i := 0; i < optionCount; i++ {
+		if i < len(images) {
+			out[i] = images[i]
+		}
+	}
+	return out
+}
+
+func isListenTapChallenge(pg *rod.Page, heading string) bool {
+	if strings.Contains(heading, "Type what you hear") {
+		return true
+	}
+	has, _ := evalBool(pg, `() => !!document.querySelector('[data-test="challenge challenge-listenTap"]')`)
+	return has
+}
+
+func scrapeTranslateInput(pg *rod.Page) (placeholder string, lang string) {
+	placeholder, _ = evalString(pg, `() => document.querySelector('[data-test="challenge-translate-input"]')?.placeholder || ''`)
+	lang, _ = evalString(pg, `() => document.querySelector('[data-test="challenge-translate-input"]')?.lang || ''`)
+	return placeholder, lang
 }
 
 func isTapTokenFillChallenge(pg *rod.Page, heading string) bool {

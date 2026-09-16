@@ -67,6 +67,7 @@ func main() {
 	fiberApp.Static("/", "./static")
 	fiberApp.Get("/status", routes.Status(&server, lanURL))
 	fiberApp.Get("/audio", routes.AudioProxy())
+	fiberApp.Get("/duo-css", routes.DuoCSS())
 	fiberApp.Get("/connect", routes.Connect(action, doneAction, &server, cfg.AuthToken))
 
 	log.Fatal(fiberApp.Listen(":" + cfg.Port))

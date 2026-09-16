@@ -21,12 +21,21 @@ var challengeHeadings = map[ChallengeType][]string{
 	},
 }
 
+var typeInTargetLangHeadings = []string{
+	"Type what you hear",
+}
+
 func DetectChallengeType(heading string, targetLangHeading string) ChallengeType {
 	for challengeType, headings := range challengeHeadings {
 		for _, h := range headings {
 			if strings.Contains(heading, h) {
 				return challengeType
 			}
+		}
+	}
+	for _, h := range typeInTargetLangHeadings {
+		if strings.Contains(heading, h) {
+			return ToJapanese
 		}
 	}
 	if strings.Contains(heading, targetLangHeading) {

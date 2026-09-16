@@ -15,8 +15,14 @@ type Challenge struct {
 	Progress    int           `json:"progress"`
 	Title       string        `json:"title"`
 	Prompt      string        `json:"prompt"`
-	Options     []string      `json:"options"`
-	RightAnswer string        `json:"rightAnswer"`
+	Options       []string      `json:"options"`
+	OptionImages  []string      `json:"optionImages,omitempty"`
+	InputPlaceholder string       `json:"inputPlaceholder,omitempty"`
+	InputLang        string       `json:"inputLang,omitempty"`
+	ChallengeHTML    string       `json:"challengeHtml,omitempty"`
+	StyleHrefs       []string     `json:"styleHrefs,omitempty"`
+	DesignTokens     string       `json:"designTokens,omitempty"`
+	RightAnswer   string        `json:"rightAnswer"`
 	Error       string        `json:"error,omitempty"`
 	AudioUrls   []string      `json:"audioUrls,omitempty"`
 	HasAudio    bool          `json:"hasAudio"`

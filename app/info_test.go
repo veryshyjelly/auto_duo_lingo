@@ -18,6 +18,7 @@ func TestDetectChallengeType(t *testing.T) {
 		{"Select the matching pairs", Matching},
 		{"Write this in English", ToEnglish},
 		{"Write this in Japanese", ToJapanese},
+		{"Type what you hear", ToJapanese},
 		{"Some unknown heading", Nothing},
 	}
 
