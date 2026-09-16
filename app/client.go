@@ -7,8 +7,9 @@ import (
 )
 
 type Client struct {
-	Connection *websocket.Conn
-	Updates    chan Challenge
+	Connection    *websocket.Conn
+	Updates       chan Challenge
+	needsSnapshot bool
 }
 
 func NewClient(conn *websocket.Conn) Client {

@@ -1,15 +1,19 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
 	"sync"
 	"time"
 )
 
 type Server struct {
-	Clients map[*Client]bool
-	mutex   sync.Mutex
-	update  chan struct{}
+	Clients    map[*Client]bool
+	mutex      sync.Mutex
+	update     chan struct{}
+	lastPushed Challenge
+	hasPushed  bool
 }
 
 func NewServer() Server {
@@ -29,6 +33,7 @@ func (s *Server) Update() {
 
 func (s *Server) AddClient(c *Client) {
 	s.mutex.Lock()
+	c.needsSnapshot = true
 	s.Clients[c] = true
 	s.mutex.Unlock()
 }
@@ -52,16 +57,34 @@ func (s *Server) Serve(doGetInfo chan interface{}, info chan Challenge) {
 		for i := 0; i < 10; i++ {
 			s.mutex.Lock()
 			if len(s.Clients) > 0 {
-				log.Println("[SCRAPPING] 🃏")
+				log.Println("[SCRAPING] 🃏")
 				doGetInfo <- true
 				information := <-info
 
+				changed := !s.hasPushed || !challengesEqual(information, s.lastPushed)
+				if changed {
+					s.lastPushed = information
+					s.hasPushed = true
+				}
+
 				for c := range s.Clients {
-					c.Updates <- information
+					if changed || c.needsSnapshot {
+						c.Updates <- information
+						c.needsSnapshot = false
+					}
 				}
 			}
 			s.mutex.Unlock()
 			time.Sleep(time.Millisecond * 150)
 		}
 	}
+}
+
+func challengesEqual(a, b Challenge) bool {
+	ja, errA := json.Marshal(a)
+	jb, errB := json.Marshal(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	return bytes.Equal(ja, jb)
 }
