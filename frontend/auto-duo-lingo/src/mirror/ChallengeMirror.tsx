@@ -196,6 +196,52 @@ const PATCH_STYLE = `
     transform: none !important;
     margin-top: 12px;
   }
+  [data-test="challenge challenge-tapComplete"] [dir="ltr"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: baseline !important;
+    gap: 2px 4px;
+    width: 100%;
+  }
+  [data-test="challenge challenge-tapComplete"] [dir="ltr"] > * {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+  [data-test="challenge challenge-tapComplete"] span[lang="ja"] {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: baseline !important;
+  }
+  [data-test="challenge challenge-tapComplete"] span[lang="ja"] > span {
+    display: inline !important;
+  }
+  [data-test="challenge challenge-tapComplete"] img {
+    flex: 0 0 auto;
+    max-width: 140px;
+    height: auto;
+    margin-right: 12px;
+  }
+  [data-mirror-mount] [data-test="challenge challenge-tapComplete"] > div > div:has([dir="ltr"]) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px;
+    width: 100%;
+  }
+  [data-test="challenge challenge-tapComplete"] [data-test="word-bank"] {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin-top: 16px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px;
+  }
   [data-mirror-used="true"] {
     opacity: 0.45 !important;
     pointer-events: none !important;
@@ -358,6 +404,13 @@ export default function ChallengeMirror({ info, ws }: ChallengeMirrorProps) {
     const current = s.info;
     if (!current || !s.ws) return;
 
+    const pickChoice = (text: string) => {
+      if (s.pending || s.selected || current.rightAnswer) return;
+      setSelected(text);
+      s.onActionSent();
+      chooseOption(text, s.ws!);
+    };
+
     const speakerBtn = target.closest('button');
     if (speakerBtn?.querySelector('svg, .animated-speaker-icon-lottie')) {
       e.preventDefault();
@@ -382,6 +435,14 @@ export default function ChallengeMirror({ info, ws }: ChallengeMirrorProps) {
       return;
     }
 
+    if (token?.closest('[data-test="word-bank"]') && s.type === ChallengeType.ChooseOption) {
+      e.preventDefault();
+      e.stopPropagation();
+      const text = token.querySelector('[data-test="challenge-tap-token-text"]')?.textContent?.trim();
+      if (text) pickChoice(text);
+      return;
+    }
+
     if (s.type === ChallengeType.Matching && token && !token.closest('[data-test="word-bank"]')) {
       e.preventDefault();
       e.stopPropagation();
@@ -393,13 +454,6 @@ export default function ChallengeMirror({ info, ws }: ChallengeMirrorProps) {
       }
       return;
     }
-
-    const pickChoice = (text: string) => {
-      if (s.pending || s.selected || current.rightAnswer) return;
-      setSelected(text);
-      s.onActionSent();
-      chooseOption(text, s.ws!);
-    };
 
     const choice = target.closest('[data-test="challenge-choice"]');
     if (choice) {

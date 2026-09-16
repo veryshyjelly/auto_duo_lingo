@@ -26,6 +26,11 @@ const scrapeChallengeMirrorJS = `() => {
 	const STRIP_SEL = '[class*="recaptcha"], [id*="recaptcha"], .grecaptcha-badge, [data-sitekey], [src*="recaptcha"], [href*="recaptcha"]';
 
 	const sanitize = (root) => {
+		root.querySelectorAll('picture').forEach((pic) => {
+			const img = pic.querySelector('img');
+			if (img) pic.replaceWith(img.cloneNode(true));
+			else pic.remove();
+		});
 		root.querySelectorAll(STRIP_TAGS).forEach((el) => el.remove());
 		root.querySelectorAll(STRIP_SEL).forEach((el) => el.remove());
 		root.querySelectorAll('link[rel="modulepreload"], link[as="script"]').forEach((el) => el.remove());
@@ -128,14 +133,18 @@ const scrapeChallengeMirrorJS = `() => {
 		});
 	};
 
-	stripEnglishAnswerSlots(clone);
+	const isToEnglish = (document.querySelector('[data-test="challenge-header"]')?.textContent || '')
+		.includes('Write this in English');
+	if (isToEnglish) {
+		stripEnglishAnswerSlots(clone);
+	}
 
 	const wordBank = document.querySelector('[data-test="word-bank"]');
 	if (wordBank && !container.contains(wordBank)) {
 		const wb = wordBank.cloneNode(true);
 		sanitize(wb);
 		absolutizeMedia(wb);
-		stripEnglishAnswerSlots(wrap);
+		if (isToEnglish) stripEnglishAnswerSlots(wrap);
 		wrap.appendChild(wb);
 	}
 
