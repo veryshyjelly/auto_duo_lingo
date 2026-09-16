@@ -1,13 +1,9 @@
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import { useEffect, useRef, useState } from 'react';
-import { playAudio } from '../Action';
+import { playAudio, proxyAudioUrl } from '../Action';
 import { Info, WS } from '../Types';
 import { duo } from './duo-theme';
-
-function proxyAudioUrl(url: string): string {
-  return `/audio?url=${encodeURIComponent(url)}`;
-}
 
 export default function DuoAudio({ info, ws }: { info: Info; ws: WS }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);

@@ -50,10 +50,10 @@ export function LessonProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setIt = useCallback((val: string) => {
+    setPending(false);
     if (infoRef.current !== val) {
       infoRef.current = val;
       setInfo(JSON.parse(val));
-      setPending(false);
     }
   }, []);
 

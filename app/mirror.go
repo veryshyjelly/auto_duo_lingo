@@ -28,9 +28,21 @@ const scrapeChallengeMirrorJS = `() => {
 	const sanitize = (root) => {
 		root.querySelectorAll(STRIP_TAGS).forEach((el) => el.remove());
 		root.querySelectorAll(STRIP_SEL).forEach((el) => el.remove());
+		root.querySelectorAll('link[rel="modulepreload"], link[as="script"]').forEach((el) => el.remove());
 		root.querySelectorAll('*').forEach((el) => {
 			[...el.attributes].forEach((attr) => {
-				if (attr.name.startsWith('on') || attr.name === 'srcdoc') el.removeAttribute(attr.name);
+				const name = attr.name.toLowerCase();
+				const val = (attr.value || '').trim().toLowerCase();
+				if (name.startsWith('on') || name === 'srcdoc') {
+					el.removeAttribute(attr.name);
+					return;
+				}
+				if (
+					(name === 'href' || name === 'src' || name === 'action' || name === 'xlink:href')
+					&& (val.startsWith('javascript:') || val.startsWith('vbscript:'))
+				) {
+					el.removeAttribute(attr.name);
+				}
 			});
 		});
 	};
@@ -65,11 +77,65 @@ const scrapeChallengeMirrorJS = `() => {
 	absolutizeMedia(clone);
 	wrap.appendChild(clone);
 
+	const stripEnglishAnswerSlots = (root) => {
+		const isEmptySlotTree = (el) => {
+			if (el.querySelector('button, img, input, textarea, [data-test="word-bank"], [data-test="challenge-header"], [data-test="challenge-choice"]')) {
+				return false;
+			}
+			if (el.textContent?.trim()) return false;
+			if (el.children.length === 0) return true;
+			return [...el.children].every((child) => child.tagName === 'DIV' && isEmptySlotTree(child));
+		};
+
+		root.querySelectorAll('[data-test="challenge-text-input"]').forEach((el) => el.remove());
+		root.querySelectorAll('[data-test$="-challenge-tap-token"]').forEach((el) => {
+			if (!el.closest('[data-test="word-bank"]')) el.remove();
+		});
+		root.querySelectorAll('div').forEach((div) => {
+			if (div.closest('[data-test="word-bank"]')) return;
+			const kids = [...div.children];
+			if (kids.length < 2) return;
+			const isLineStack = kids.every((child) => (
+				child.tagName === 'DIV'
+				&& !child.textContent?.trim()
+				&& !child.querySelector('button, img, input, textarea, [data-test]')
+			));
+			if (isLineStack) div.remove();
+		});
+		const wb = root.querySelector('[data-test="word-bank"]');
+		if (!wb) return;
+		const col = wb.parentElement;
+		if (col) {
+			[...col.children].forEach((child) => {
+				if (child === wb) return;
+				const keep = child.querySelector(
+					'img, picture, [data-test="challenge-header"], [data-test="challenge-choice"], [data-test="challenge-judge-text"]'
+				);
+				if (!keep && isEmptySlotTree(child)) child.remove();
+			});
+			const row = col.parentElement;
+			if (row) {
+				[...row.children].forEach((sibling) => {
+					if (sibling === col || sibling.contains(wb)) return;
+					if (sibling.querySelector('img, picture, [data-test="challenge-header"], [data-test="challenge-choice"], [data-test="word-bank"]')) return;
+					if (isEmptySlotTree(sibling)) sibling.remove();
+				});
+			}
+		}
+		root.querySelectorAll('div').forEach((div) => {
+			if (div.closest('[data-test="word-bank"]')) return;
+			if (isEmptySlotTree(div) && div.children.length <= 1) div.remove();
+		});
+	};
+
+	stripEnglishAnswerSlots(clone);
+
 	const wordBank = document.querySelector('[data-test="word-bank"]');
 	if (wordBank && !container.contains(wordBank)) {
 		const wb = wordBank.cloneNode(true);
 		sanitize(wb);
 		absolutizeMedia(wb);
+		stripEnglishAnswerSlots(wrap);
 		wrap.appendChild(wb);
 	}
 

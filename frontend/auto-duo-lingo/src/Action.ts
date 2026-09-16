@@ -49,6 +49,15 @@ export const playAudio = (ws: WS) => {
     ws.current?.send(JSON.stringify(action));
 }
 
+export function proxyAudioUrl(url: string): string {
+    return `/audio?url=${encodeURIComponent(url)}`;
+}
+
+export function playProxiedAudio(url: string): Promise<void> {
+    const audio = new Audio(proxyAudioUrl(url));
+    return audio.play();
+}
+
 export function getChips(strings: string[], target: string): string[] | null {
     const lowercaseToIndex: Record<string, number> = {};
     for (let i = 0; i < strings.length; i++) {
